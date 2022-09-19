@@ -1,0 +1,15 @@
+.DS_Store
+rl.egg-info/
+__pycache__/
+*.pyc
+
+
+pixel/saved_agents
+pixel/gifs
+pixel/video
+pixel/wandb
+pixel/jpgs/
+pixel/lightning_logs
+pixel/MUJOCO_LOG.TXT
+
+wandb
