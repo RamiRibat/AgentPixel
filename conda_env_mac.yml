@@ -1,0 +1,13 @@
+name: pixel
+channels:
+  - pytorch
+dependencies:
+  - python
+  - pytorch
+  - tqdm
+  - matplotlib
+  - plotly
+  pip:
+    - gym
+    - atari-py
+    - opencv-python
