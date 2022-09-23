@@ -23,7 +23,7 @@ configurations = {
     },
 
     'learning': {
-        'steps': int(1e4),
+        'steps': int(2e4),
         # 'epoch_steps': int(1e3),
         'init_steps': int(32),
         'expl_steps': int(0),
@@ -70,7 +70,7 @@ configurations = {
     },
 
     'data': {
-        'buffer_type': 'simple-numpy',
+        'buffer_type': 'simple',
         'buffer_size': int(1e3),
         'batch_size': 32,
 
