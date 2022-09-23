@@ -32,7 +32,6 @@ class RainbowAgent:
     def _build(self):
         self.online_net, self.target_net = self._set_q(), self._set_q()
         self.target_net.load_state_dict(self.online_net.state_dict())
-        for p in self.target_net.parameters(): p.requires_grad = False
         self.target_net.eval()
 
     def _set_q(self):
@@ -44,18 +43,20 @@ class RainbowAgent:
     def get_q(self, observation, action):
         return self.online_net(observation).gather(1, action)
 
-    def get_q_target(self, observation):
-        return self.online_net(observation).max(dim=1, keepdim=True)[0]
+    def get_double_q_target(self, observation):
+        with T.no_grad():
+            return self.target_net(observation).gather(1, self.online_net(observation).argmax(dim=1, keepdim=True))
 
     def get_greedy_action(self, observation, evaluation=False): # Select Action(s) based on eps_greedy
         with T.no_grad():
+            if evaluation:
+                pass
+            else:
+                pass
             return self.online_net(T.FloatTensor(observation).to(self._device_)).argmax().cpu().numpy()
 
-    def get_eps_greedy_action(self, observation, epsilon=0.001, evaluation=False): # Select Action(s) based on eps_greedy
-        if np.random.random() < epsilon:
-            return np.random.randint(0, self.act_dim)
-        else:
-            return self.get_greedy_action(observation)
+    def get_action(self, observation, epsilon=None, evaluation=False):
+        return self.get_greedy_action(observation, evaluation)
 
 
 
@@ -106,10 +107,12 @@ class RainbowLearner(MFRL):
                 lastZ, lastL = Z, L
             Traj = Traj_new
 
+            beta = self.update_beta(beta, t, LT)
+
             if (t>iT) and ((t-1)%Lf == 0):
                 Jq = self.train_rainbow(t)
                 oldJq = Jq
-                epsilon = self.update_epsilon(epsilon)
+                # epsilon = self.update_epsilon(epsilon)
             else:
                 Jq = oldJq
 
@@ -157,9 +160,6 @@ class RainbowLearner(MFRL):
         rewards = T.FloatTensor(batch['rewards']).to(self._device_)
         observations_next = T.FloatTensor(batch['observations_next']).to(self._device_)
         terminals = T.FloatTensor(batch['terminals']).to(self._device_)
-        # print('O: ', observations.shape)
-        # print('A: ', actions.shape)
-        # print('R: ', rewards.shape)
 
         q_value = self.agent.get_q(observations, actions)
         q_next = self.agent.get_q_target(observations_next)
@@ -175,12 +175,10 @@ class RainbowLearner(MFRL):
     def update_target_net(self) -> None:
         self.agent.target_net.load_state_dict(self.agent.online_net.state_dict())
 
-    def update_epsilon(self, epsilon):
-        max_epsilon = self.configs['algorithm']['hyper-parameters']['max-epsilon']
-        min_epsilon = self.configs['algorithm']['hyper-parameters']['min-epsilon']
-        epsilon_decay = self.configs['algorithm']['hyper-parameters']['epsilon-decay']
-        return max(min_epsilon,
-                   epsilon - (max_epsilon - min_epsilon) * epsilon_decay)
+    def update_beta(self, beta, t, LT):
+        fraction = min(t/LT, 1.0)
+        beta = beta + fraction * (1.0 - beta)
+        return beta
 
     def func2(self):
         pass
@@ -215,9 +213,9 @@ def main(exp_prefix, config, seed, device, wb):
             config=configs
         )
 
-    rainbow_learner = RainbowLearner(exp_prefix, configs, seed, device, wb)
-
-    rainbow_learner.learn()
+    # rainbow_learner = RainbowLearner(exp_prefix, configs, seed, device, wb)
+    #
+    # rainbow_learner.learn()
 
     print('\n')
     print('... End Rainbow experiment')

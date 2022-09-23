@@ -23,6 +23,7 @@ class DQNAgent:
     def __init__(self,
                  obs_dim, act_dim,
                  configs, seed, device):
+        print('Initialize DQN Agent')
         self.obs_dim, self.act_dim= obs_dim, act_dim
         self.configs, self.seed = configs, seed
         self._device_ = device
@@ -32,7 +33,7 @@ class DQNAgent:
     def _build(self):
         self.online_net, self.target_net = self._set_q(), self._set_q()
         self.target_net.load_state_dict(self.online_net.state_dict())
-        for p in self.target_net.parameters(): p.requires_grad = False
+        # for p in self.target_net.parameters(): p.requires_grad = False
         self.target_net.eval()
 
     def _set_q(self):
@@ -45,7 +46,8 @@ class DQNAgent:
         return self.online_net(observation).gather(1, action)
 
     def get_q_target(self, observation):
-        return self.online_net(observation).max(dim=1, keepdim=True)[0]
+        with T.no_grad():
+            return self.target_net(observation).max(dim=1, keepdim=True)[0]
 
     def get_greedy_action(self, observation, evaluation=False): # Select Action(s) based on eps_greedy
         with T.no_grad():
@@ -56,6 +58,9 @@ class DQNAgent:
             return np.random.randint(0, self.act_dim)
         else:
             return self.get_greedy_action(observation)
+
+    def get_action(self, observation, epsilon=0.001):
+        return self.get_eps_greedy_action(observation, epsilon)
 
 
 
@@ -89,23 +94,27 @@ class DQNLearner(MFRL):
         Lf = self.configs['learning']['frequency']
         Vf = self.configs['evaluation']['frequency']
         G = self.configs['learning']['grad_steps']
+        alg = self.configs['algorithm']['name']
         epsilon = self.configs['algorithm']['hyper-parameters']['init-epsilon']
 
         oldJq = 0
         Z, S, L, Traj = 0, 0, 0, 0
-        DQNLT = trange(1, LT+1, desc="DQN")
+        DQNLT = trange(1, LT+1, desc=alg)
         observation, info = self.learn_env.reset()
         logs, ZList, LList, JQList = dict(), [0], [0], []
+        termZ, termL = 0, 0
         # EPS = []
 
         for t in DQNLT:
             observation, Z, L, Traj_new = self.interact(observation, Z, L, t, Traj, epsilon)
             if (Traj_new - Traj) > 0:
+                # termZ, termL = lastZ, lastL
                 ZList.append(lastZ), LList.append(lastL)
             else:
                 lastZ, lastL = Z, L
             Traj = Traj_new
 
+            # if (t>iT):
             if (t>iT) and ((t-1)%Lf == 0):
                 Jq = self.train_dqn(t)
                 oldJq = Jq
@@ -117,21 +126,29 @@ class DQNLearner(MFRL):
                 VZ, VS, VL = self.evaluate()
                 logs['data/env_buffer_size                '] = self.buffer.size
                 logs['training/dqn/Jq                     '] = Jq
+                logs['training/dqn/epsilon                '] = epsilon
                 logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
                 logs['learning/real/rollout_return_std    '] = np.std(ZList)
                 logs['learning/real/rollout_length        '] = np.mean(LList)
+                # logs['learning/real/rollout_return_mean   '] = termZ
+                # logs['learning/real/rollout_return_std    '] = termZ
+                # logs['learning/real/rollout_length        '] = termL
                 logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
                 logs['evaluation/episodic_return_std      '] = np.std(VZ)
                 logs['evaluation/episodic_length_mean     '] = np.mean(VL)
-                DQNLT.set_postfix({'Traj': Traj, 'AvgZ': np.mean(ZList), 'AvgL': np.mean(LList)})
+                DQNLT.set_postfix({'Traj': Traj, 'learnZ': np.mean(ZList), 'evalZ': np.mean(VZ)})
                 if self.WandB: wandb.log(logs, step=t)
 
         VZ, VS, VL = self.evaluate()
         logs['data/env_buffer_size                '] = self.buffer.size
-        logs['training/dqn/Jq                     '] = np.mean(JQList)
+        logs['training/dqn/Jq                     '] = Jq
+        logs['training/dqn/epsilon                '] = epsilon
         logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
         logs['learning/real/rollout_return_std    '] = np.std(ZList)
         logs['learning/real/rollout_length        '] = np.mean(LList)
+        # logs['learning/real/rollout_return_mean   '] = termZ
+        # logs['learning/real/rollout_return_std    '] = termZ
+        # logs['learning/real/rollout_length        '] = termL
         logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
         logs['evaluation/episodic_return_std      '] = np.std(VZ)
         logs['evaluation/episodic_length_mean     '] = np.mean(VL)
@@ -203,7 +220,7 @@ def main(exp_prefix, config, seed, device, wb):
     env_name = configs['environment']['name']
     env_domain = configs['environment']['domain']
 
-    group_name = f"{env_name}-{alg_name}-1" # H < -2.7
+    group_name = f"{env_name}-{alg_name}-6" # H < -2.7
     exp_prefix = f"seed:{seed}"
     # print('group: ', group_name)
 

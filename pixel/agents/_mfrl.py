@@ -2,7 +2,7 @@
 
 import gym
 
-from pixel.data.buffers import ReplayBuffer
+from pixel.data.buffers import ReplayBuffer, PERBuffer
 
 
 
@@ -20,7 +20,6 @@ class MFRL:
         self.seed = seed
         self._device_ = device
 
-
     def _build(self):
         self._set_env()
         self._set_buffer()
@@ -30,6 +29,7 @@ class MFRL:
             # env.seed(self.seed)
             env.action_space.seed(self.seed)
             env.observation_space.seed(self.seed)
+            env.reset(seed=self.seed)
         env_name = self.configs['environment']['name']
         evaluate = self.configs['evaluation']['evaluate']
         self.learn_env = gym.make(env_name)
@@ -44,12 +44,19 @@ class MFRL:
     def _set_buffer(self):
         obs_dim, act_dim = self.obs_dim, self.act_dim
         max_size = self.configs['data']['buffer_size']
-        self.buffer = ReplayBuffer(obs_dim, max_size)
+        batch_size = self.configs['data']['batch_size']
+        buffer_type = self.configs['data']['buffer_type']
+        if buffer_type is 'simple':
+            self.buffer = ReplayBuffer(obs_dim, max_size, batch_size)
+        elif buffer_type is 'per':
+            alpha = self.configs['algorithm']['hyper-parameters']['alpha']
+            self.buffer = PERBuffer(obs_dim, max_size, batch_size, alpha)
 
     def interact(self, observation, Z, L, t, Traj, epsilon):
         xT = self.configs['learning']['expl_steps']
         if t > xT:
-            action = self.agent.get_eps_greedy_action(observation, epsilon=epsilon)
+            # action = self.agent.get_eps_greedy_action(observation, epsilon=epsilon)
+            action = self.agent.get_action(observation, epsilon=epsilon)
         # else:
         #     action = self.learn_env.action_space.sample()
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
