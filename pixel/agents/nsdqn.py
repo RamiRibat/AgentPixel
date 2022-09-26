@@ -16,111 +16,103 @@ import torch as T
 nn, F = T.nn, T.nn.functional
 
 from pixel.agents._mfrl import MFRL
-from pixel.agents.dqn import DQNLearner
+from pixel.agents.dqn import DQNAgent#, DQNLearner
 from pixel.networks.value_functions import QNetwork
 
 
 
-class nsDQNLearner(DQNLearner):
+class nsDQNLearner(MFRL):
     """
     Multi-Steps Deep Q Network (DQN) [(? et al.); 20??]
     """
     def __init__(self, exp_prefix, configs, seed, device, wb):
         super(nsDQNLearner, self).__init__(exp_prefix, configs, seed, device)
-        print('Initialize DQN Learner')
+        print('Initialize nsDQN Learner')
         self.configs = configs
         self.seed = seed
         self._device_ = device
         self.WandB = wb
-        # self._build()
+        self._build()
 
-    # def _build(self):
-    #     super(DQNLearner, self)._build()
-    #     self._build_dqn()
-    #
-    # def _build_dqn(self):
-    #     self._set_agent()
-    #
-    # def _set_agent(self):
-    #     self.agent = DQNAgent(self.obs_dim, self.act_dim, self.configs, self.seed, self._device_)
+    def _build(self):
+        super(nsDQNLearner, self)._build()
+        self._build_dqn()
 
-    # def learn(self):
-    #     LT = self.configs['learning']['steps']
-    #     iT = self.configs['learning']['init_steps']
-    #     xT = self.configs['learning']['expl_steps']
-    #     Lf = self.configs['learning']['frequency']
-    #     Vf = self.configs['evaluation']['frequency']
-    #     G = self.configs['learning']['grad_steps']
-    #     alg = self.configs['algorithm']['name']
-    #     epsilon = self.configs['algorithm']['hyper-parameters']['init-epsilon']
-    #
-    #     oldJq = 0
-    #     Z, S, L, Traj = 0, 0, 0, 0
-    #     DQNLT = trange(1, LT+1, desc=alg)
-    #     observation, info = self.learn_env.reset()
-    #     logs, ZList, LList, JQList = dict(), [0], [0], []
-    #     termZ, termL = 0, 0
-    #     # EPS = []
-    #
-    #     for t in DQNLT:
-    #         observation, Z, L, Traj_new = self.interact(observation, Z, L, t, Traj, epsilon)
-    #         if (Traj_new - Traj) > 0:
-    #             # termZ, termL = lastZ, lastL
-    #             ZList.append(lastZ), LList.append(lastL)
-    #         else:
-    #             lastZ, lastL = Z, L
-    #         Traj = Traj_new
-    #
-    #         # if (t>iT):
-    #         if (t>iT) and ((t-1)%Lf == 0):
-    #             Jq = self.train_dqn(t)
-    #             oldJq = Jq
-    #             epsilon = self.update_epsilon(epsilon)
-    #         else:
-    #             Jq = oldJq
-    #
-    #         if ((t-1)%Vf == 0):
-    #             VZ, VS, VL = self.evaluate()
-    #             logs['data/env_buffer_size                '] = self.buffer.size
-    #             logs['training/dqn/Jq                     '] = Jq
-    #             logs['training/dqn/epsilon                '] = epsilon
-    #             logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
-    #             logs['learning/real/rollout_return_std    '] = np.std(ZList)
-    #             logs['learning/real/rollout_length        '] = np.mean(LList)
-    #             # logs['learning/real/rollout_return_mean   '] = termZ
-    #             # logs['learning/real/rollout_return_std    '] = termZ
-    #             # logs['learning/real/rollout_length        '] = termL
-    #             logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
-    #             logs['evaluation/episodic_return_std      '] = np.std(VZ)
-    #             logs['evaluation/episodic_length_mean     '] = np.mean(VL)
-    #             DQNLT.set_postfix({'Traj': Traj, 'learnZ': np.mean(ZList), 'evalZ': np.mean(VZ)})
-    #             if self.WandB: wandb.log(logs, step=t)
-    #
-    #     VZ, VS, VL = self.evaluate()
-    #     logs['data/env_buffer_size                '] = self.buffer.size
-    #     logs['training/dqn/Jq                     '] = Jq
-    #     logs['training/dqn/epsilon                '] = epsilon
-    #     logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
-    #     logs['learning/real/rollout_return_std    '] = np.std(ZList)
-    #     logs['learning/real/rollout_length        '] = np.mean(LList)
-    #     # logs['learning/real/rollout_return_mean   '] = termZ
-    #     # logs['learning/real/rollout_return_std    '] = termZ
-    #     # logs['learning/real/rollout_length        '] = termL
-    #     logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
-    #     logs['evaluation/episodic_return_std      '] = np.std(VZ)
-    #     logs['evaluation/episodic_length_mean     '] = np.mean(VL)
-    #     if self.WandB: wandb.log(logs, step=t)
-    #
-    #     self.learn_env.close()
-    #     self.eval_env.close()
+    def _build_dqn(self):
+        self._set_agent()
 
-    def train_dqn(self, t) -> T.Tensor:
+    def _set_agent(self):
+        self.agent = DQNAgent(self.obs_dim, self.act_dim, self.configs, self.seed, self._device_)
+
+    def learn(self):
+        LT = self.configs['learning']['steps']
+        iT = self.configs['learning']['init_steps']
+        xT = self.configs['learning']['expl_steps']
+        Lf = self.configs['learning']['frequency']
+        Vf = self.configs['evaluation']['frequency']
+        G = self.configs['learning']['grad_steps']
+        alg = self.configs['algorithm']['name']
+        epsilon = self.configs['algorithm']['hyper-parameters']['init-epsilon']
+
+        oldJq = 0
+        Z, S, L, Traj = 0, 0, 0, 0
+        DQNLT = trange(1, LT+1, desc=alg)
+        observation, info = self.learn_env.reset()
+        logs, ZList, LList, JQList = dict(), [0], [0], []
+        termZ, termL = 0, 0
+        # EPS = []
+
+        for t in DQNLT:
+            observation, Z, L, Traj_new = self.interact(observation, Z, L, t, Traj, epsilon)
+            if (Traj_new - Traj) > 0:
+                ZList.append(lastZ), LList.append(lastL)
+            else:
+                lastZ, lastL = Z, L
+            Traj = Traj_new
+
+            if (t>iT) and ((t-1)%Lf == 0):
+                Jq = self.train_nsdqn(t)
+                oldJq = Jq
+                epsilon = self.update_epsilon(epsilon)
+            else:
+                Jq = oldJq
+
+            if ((t-1)%Vf == 0):
+                VZ, VS, VL = self.evaluate()
+                logs['data/env_buffer_size                '] = self.buffer.size
+                logs['training/dqn/Jq                     '] = Jq
+                logs['training/dqn/epsilon                '] = epsilon
+                logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
+                logs['learning/real/rollout_return_std    '] = np.std(ZList)
+                logs['learning/real/rollout_length        '] = np.mean(LList)
+                logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
+                logs['evaluation/episodic_return_std      '] = np.std(VZ)
+                logs['evaluation/episodic_length_mean     '] = np.mean(VL)
+                DQNLT.set_postfix({'Traj': Traj, 'learnZ': np.mean(ZList), 'evalZ': np.mean(VZ)})
+                if self.WandB: wandb.log(logs, step=t)
+
+        VZ, VS, VL = self.evaluate()
+        logs['data/env_buffer_size                '] = self.buffer.size
+        logs['training/dqn/Jq                     '] = Jq
+        logs['training/dqn/epsilon                '] = epsilon
+        logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
+        logs['learning/real/rollout_return_std    '] = np.std(ZList)
+        logs['learning/real/rollout_length        '] = np.mean(LList)
+        logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
+        logs['evaluation/episodic_return_std      '] = np.std(VZ)
+        logs['evaluation/episodic_length_mean     '] = np.mean(VL)
+        if self.WandB: wandb.log(logs, step=t)
+
+        self.learn_env.close()
+        self.eval_env.close()
+
+    def train_nsdqn(self, t) -> T.Tensor:
         batch_size = self.configs['data']['batch_size']
         TUf = self.configs['algorithm']['hyper-parameters']['target_update_frequency']
         batch = self.buffer.sample_batch(batch_size, device=self._device_)
         idxs = batch['idxs']
         batch_n = self.buffer_n.sample_batch_from_idxs(idxs, device=self._device_)
-        Jq = self.update_online_net(batch)
+        Jq = self.update_online_net(batch, batch_n)
         Jq = Jq.item()
         if ((t-1)%TUf == 0): self.update_target_net()
         return Jq
@@ -156,18 +148,18 @@ class nsDQNLearner(DQNLearner):
 
         return Jq
 
-    # def update_target_net(self) -> None:
-    #     self.agent.target_net.load_state_dict(self.agent.online_net.state_dict())
-    #
-    # def update_epsilon(self, epsilon):
-    #     max_epsilon = self.configs['algorithm']['hyper-parameters']['max-epsilon']
-    #     min_epsilon = self.configs['algorithm']['hyper-parameters']['min-epsilon']
-    #     epsilon_decay = self.configs['algorithm']['hyper-parameters']['epsilon-decay']
-    #     return max(min_epsilon,
-    #                epsilon - (max_epsilon - min_epsilon) * epsilon_decay)
-    #
-    # def func2(self):
-    #     pass
+    def update_target_net(self) -> None:
+        self.agent.target_net.load_state_dict(self.agent.online_net.state_dict())
+
+    def update_epsilon(self, epsilon):
+        max_epsilon = self.configs['algorithm']['hyper-parameters']['max-epsilon']
+        min_epsilon = self.configs['algorithm']['hyper-parameters']['min-epsilon']
+        epsilon_decay = self.configs['algorithm']['hyper-parameters']['epsilon-decay']
+        return max(min_epsilon,
+                   epsilon - (max_epsilon - min_epsilon) * epsilon_decay)
+
+    def func2(self):
+        pass
 
 
 
@@ -175,7 +167,7 @@ class nsDQNLearner(DQNLearner):
 
 def main(exp_prefix, config, seed, device, wb):
 
-    print('Start DQN experiment...')
+    print('Start nsDQN experiment...')
     print('\n')
 
     configs = config.configurations
@@ -199,12 +191,12 @@ def main(exp_prefix, config, seed, device, wb):
             config=configs
         )
 
-    dqn_learner = DQNLearner(exp_prefix, configs, seed, device, wb)
+    dqn_learner = nsDQNLearner(exp_prefix, configs, seed, device, wb)
 
     dqn_learner.learn()
 
     print('\n')
-    print('... End DQN experiment')
+    print('... End nsDQN experiment')
 
 
 

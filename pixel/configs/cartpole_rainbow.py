@@ -14,7 +14,7 @@ configurations = {
     },
 
     'environment': {
-        'name': 'CartPole-v0',
+        'name': 'CartPole-v1',
         'domain': 'gym',
         'horizon': int(500),
         'state': 'discrete',
@@ -49,7 +49,7 @@ configurations = {
             'alpha': 0.2,
             'beta': 0.6,
             'prior-epsilon': 1e-6,
-            'v-min': 0.0,
+            'v-min': 0.0, #
             'v-max': 200.0,
             'atom-size': 51,
             'n-steps': 3,
@@ -73,7 +73,7 @@ configurations = {
     },
 
     'data': {
-        'buffer_type': 'simple-numpy',
+        'buffer_type': 'per+nSteps',
         'buffer_size': int(1e4),
         'batch_size': 128,
 

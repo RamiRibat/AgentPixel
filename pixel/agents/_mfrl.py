@@ -53,40 +53,72 @@ class MFRL:
             print('buffer_type: ', buffer_type)
             alpha = self.configs['algorithm']['hyper-parameters']['alpha']
             self.buffer = PERBuffer(obs_dim, max_size, batch_size, alpha)
-        elif buffer_type == 'n-steps':
+        elif buffer_type == 'simple+nSteps':
             print('buffer_type: ', buffer_type)
             n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
             self.buffer = NSRBuffer(obs_dim, max_size, batch_size, n_steps=1)
             self.buffer_n = NSRBuffer(obs_dim, max_size, batch_size, n_steps=n_steps)
+        elif buffer_type == 'per+nSteps':
+            print('buffer_type: ', buffer_type)
+            alpha = self.configs['algorithm']['hyper-parameters']['alpha']
+            n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
+            self.buffer_per = PERBuffer(obs_dim, max_size, batch_size, alpha)
+            self.buffer_n = NSRBuffer(obs_dim, max_size, batch_size, n_steps=n_steps)
 
     def interact(self, observation, Z, L, t, Traj, epsilon):
         xT = self.configs['learning']['expl_steps']
-        buffer_type = self.configs['data']['buffer_type']
         if t > xT:
             # action = self.agent.get_eps_greedy_action(observation, epsilon=epsilon)
             action = self.agent.get_action(observation, epsilon=epsilon)
         # else:
         #     action = self.learn_env.action_space.sample()
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
-        self.buffer.store_sarsd(observation,
-                                action,
-                                reward,
-                                observation_next,
-                                terminated)
-        if buffer_type == 'n-steps':
+        self.store_sarsd_in_buffer(observation, action, reward, observation_next, terminated)
+        observation = observation_next
+        Z += reward
+        L += 1
+        if terminated or truncated:
+            Z, S, L, Traj = 0, 0, 0, Traj+1
+            observation, info = self.learn_env.reset()
+        return observation, Z, L, Traj
+
+    def store_sarsd_in_buffer(
+        self,
+        observation,
+        action,
+        reward,
+        observation_next,
+        terminated):
+
+        buffer_type = self.configs['data']['buffer_type']
+        if (buffer_type == 'simple') or (buffer_type == 'per'):
+            self.buffer.store_sarsd(observation,
+                                    action,
+                                    reward,
+                                    observation_next,
+                                    terminated)
+        elif buffer_type == 'simple+nSteps':
+            self.buffer.store_sarsd(observation,
+                                    action,
+                                    reward,
+                                    observation_next,
+                                    terminated)
             self.buffer_n.store_sarsd(observation,
                                       action,
                                       reward,
                                       observation_next,
                                       terminated)
-        observation = observation_next
-        Z += reward
-        L += 1
-        # if terminated:
-        if terminated or truncated:
-            Z, S, L, Traj = 0, 0, 0, Traj+1
-            observation, info = self.learn_env.reset()
-        return observation, Z, L, Traj
+        elif buffer_type == 'per+nSteps':
+            self.buffer_per.store_sarsd(observation,
+                                    action,
+                                    reward,
+                                    observation_next,
+                                    terminated)
+            self.buffer_n.store_sarsd(observation,
+                                      action,
+                                      reward,
+                                      observation_next,
+                                      terminated)
 
     def evaluate(self):
         evaluate = self.configs['evaluation']['evaluate']

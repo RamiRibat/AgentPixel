@@ -37,7 +37,7 @@ class NoisyLinear(nn.Module):
         self.bias_sigma.data.fill_(self.std_init / math.sqrt(self.in_features))
 
     def reset_noise(self):
-        print('Resent NoisyLinear noise')
+        print('Reset NoisyLinear noise')
         epsilon_in = self.scale_noise(self.in_features)
         epsilon_out = self.scale_noise(self.out_features)
         self.weight_epsilon.copy_(epsilon_out.ger(epsilon_in))
@@ -80,6 +80,18 @@ class NoisyNetwork(nn.Module):
 
     def forward(self, x: T.Tensor) -> T.Tensor:
         return self.net(x)
+
+    def reset_noise(self):
+        for m in self.net.modules():
+            if isinstance(m, NoisyLinear):
+                m.reset_noise()
+
+
+
+
+
+
+
 
 
 

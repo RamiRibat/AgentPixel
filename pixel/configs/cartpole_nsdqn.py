@@ -71,7 +71,7 @@ configurations = {
     },
 
     'data': {
-        'buffer_type': 'n-steps',
+        'buffer_type': 'simple+nSteps',
         'buffer_size': int(2e3),
         'batch_size': 32,
 

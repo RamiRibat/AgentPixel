@@ -129,8 +129,6 @@ class NSRBuffer:
         return self.size
 
 
-
-
 from .segment_tree import SumSegmentTree, MinSegmentTree
 
 class PERBuffer(ReplayBuffer):
@@ -206,6 +204,12 @@ class PERBuffer(ReplayBuffer):
         max_w = (p_min * len(self)) ** (-beta)
         importance_w_normz = importance_w / max_w
         return importance_w_normz
+
+
+
+
+
+
 
 
 

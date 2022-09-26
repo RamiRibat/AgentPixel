@@ -41,6 +41,10 @@ class NDCQNetwork(nn.Module):
         q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
         return F.softmax(q_atoms, dim=-1).clamp(min=1e-3)
 
+    def reset_noise(self):
+        self.v_net.reset_noise()
+        self.adv_net.reset_noise()
+
 
 
 
