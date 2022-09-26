@@ -9,11 +9,11 @@ Algorithms we are re-implementing/plannning to re-implement:
 | --- | :---: | :---: | :---: |
 | DQN | ✅ |  |  |
 | Double DQN | ✅ |  |  |
-| PER (DQN) | ✅ |  |  |
-| Duelling Nets (DQN) |  |  |  |
+| PER-DQN | ✅ |  |  |
+| Duelling DQN |  |  |  |
 | A3C |  |  |  |
-| C51 (DQN) |  |  |  |
-| Noisy Nets (DQN) |  |  |  |
+| C51 |  |  |  |
+| Noisy DQN |  |  |  |
 | Rainbow | ✅ |  |  |
 | R2D2 |  |  |  |
 | NGU |  |  |  |
