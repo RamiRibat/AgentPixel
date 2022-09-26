@@ -46,6 +46,90 @@ class ReplayBuffer:
         return self.size
 
 
+class NSRBuffer:
+    "Simple Replay Buffer for Discrete Action Space (Numpy)"
+    # def __init__(self, obs_dim: int, act_dim: int, max_size: int, batch_size: int = 32, seed=0, device='cpu'):
+    def __init__(
+        self,
+        obs_dim: int,
+        max_size: int,
+        batch_size: int = 32,
+        n_steps: int = 1,
+        gamma: float = 0.99,
+        seed = 0,
+        device = 'cpu'):
+        self.obs_buf = np.zeros([max_size, obs_dim], dtype=np.float32)
+        self.act_buf = np.zeros([max_size, 1], dtype=np.float32)
+        self.rew_buf = np.zeros([max_size, 1], dtype=np.float32)
+        self.obs_next_buf = np.zeros([max_size, obs_dim], dtype=np.float32)
+        self.ter_buf = np.zeros([max_size, 1], dtype=np.float32)
+        self.ptr, self.size, self.max_size, self.batch_size = 0, 0, max_size, batch_size
+        self.n_steps, self.n_steps_buffer = n_steps, deque(maxlen=n_steps)
+        self.gamma = gamma
+        self._device_ = device
+
+    def store_sarsd(
+        self,
+        o: np.ndarray,
+        a: np.ndarray,
+        r: float,
+        o_next: np.ndarray,
+        d: bool) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, bool]:
+
+        sarsd = (o, a, r, o_next, d)
+        self.n_steps_buffer.append(sarsd)
+        if len(self.n_steps_buffer) < self.n_steps:
+            return ()
+
+        o, a = self.n_steps_buffer[0][:2]
+        r, o_next, d = self._get_n_steps_info(self.n_steps_buffer, self.gamma)
+
+        self.obs_buf[self.ptr] = o
+        self.act_buf[self.ptr] = a
+        self.rew_buf[self.ptr] = r
+        self.obs_next_buf[self.ptr] = o_next
+        self.ter_buf[self.ptr] = d
+        self.ptr = (self.ptr+1) % self.max_size
+        self.size = min(self.size+1, self.max_size)
+
+        return self.n_steps_buffer[0]
+
+    def sample_batch(self, batch_size=32, device='cpu') -> Dict[str, np.ndarray]:
+        # idxs = np.random.randint(0, self.size, size=batch_size)
+        idxs = np.random.choice(self.size, size=batch_size, replace=False)
+        batch = dict(idxs=idxs,
+                     observations=self.obs_buf[idxs],
+        			 actions=self.act_buf[idxs],
+        			 rewards=self.rew_buf[idxs],
+        			 observations_next=self.obs_next_buf[idxs],
+        			 terminals=self.ter_buf[idxs])
+        return batch
+
+    def sample_batch_from_idxs(self, idxs: np.ndarray, device='cpu') -> Dict[str, np.ndarray]:
+        batch = dict(observations=self.obs_buf[idxs],
+        			 actions=self.act_buf[idxs],
+        			 rewards=self.rew_buf[idxs],
+        			 observations_next=self.obs_next_buf[idxs],
+        			 terminals=self.ter_buf[idxs])
+        return batch
+
+    def _get_n_steps_info(
+        self,
+        n_steps_buffer: Deque,
+        gamma: float,
+        ) -> Tuple[float, np.ndarray, bool]:
+        reward, observation_next, terminal = self.n_steps_buffer[-1][-3:]
+        for sards in reversed(list(n_steps_buffer)[:-1]):
+            r, o_next, d = sards[-3:]
+            reward = r + gamma*(1-d)*reward
+            observation_next, terminal = (o_next, d) if d else (observation_next, terminal)
+        return reward, observation_next, terminal
+
+    def __len__(self) -> int:
+        return self.size
+
+
+
 
 from .segment_tree import SumSegmentTree, MinSegmentTree
 

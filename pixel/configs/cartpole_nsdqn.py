@@ -40,11 +40,12 @@ configurations = {
     },
 
     'algorithm': {
-        'name': 'DDQN',
+        'name': 'nsDQN',
         # 'model': None,
         # 'on-policy': False,
         # 'model-based': False,
         'hyper-parameters': {
+            'n-steps': 3,
             'gamma': 0.99,
             'init-epsilon': 1.0,
             'max-epsilon': 1.0,
@@ -70,8 +71,8 @@ configurations = {
     },
 
     'data': {
-        'buffer_type': 'simple-numpy',
-        'buffer_size': int(1e3),
+        'buffer_type': 'n-steps',
+        'buffer_size': int(2e3),
         'batch_size': 32,
 
     }

@@ -2,7 +2,7 @@
 
 import gym
 
-from pixel.data.buffers import ReplayBuffer, PERBuffer
+from pixel.data.buffers import ReplayBuffer, PERBuffer, NSRBuffer
 
 
 
@@ -46,14 +46,22 @@ class MFRL:
         max_size = self.configs['data']['buffer_size']
         batch_size = self.configs['data']['batch_size']
         buffer_type = self.configs['data']['buffer_type']
-        if buffer_type is 'simple':
+        if buffer_type == 'simple':
+            print('buffer_type: ', buffer_type)
             self.buffer = ReplayBuffer(obs_dim, max_size, batch_size)
-        elif buffer_type is 'per':
+        elif buffer_type == 'per':
+            print('buffer_type: ', buffer_type)
             alpha = self.configs['algorithm']['hyper-parameters']['alpha']
             self.buffer = PERBuffer(obs_dim, max_size, batch_size, alpha)
+        elif buffer_type == 'n-steps':
+            print('buffer_type: ', buffer_type)
+            n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
+            self.buffer = NSRBuffer(obs_dim, max_size, batch_size, n_steps=1)
+            self.buffer_n = NSRBuffer(obs_dim, max_size, batch_size, n_steps=n_steps)
 
     def interact(self, observation, Z, L, t, Traj, epsilon):
         xT = self.configs['learning']['expl_steps']
+        buffer_type = self.configs['data']['buffer_type']
         if t > xT:
             # action = self.agent.get_eps_greedy_action(observation, epsilon=epsilon)
             action = self.agent.get_action(observation, epsilon=epsilon)
@@ -65,6 +73,12 @@ class MFRL:
                                 reward,
                                 observation_next,
                                 terminated)
+        if buffer_type == 'n-steps':
+            self.buffer_n.store_sarsd(observation,
+                                      action,
+                                      reward,
+                                      observation_next,
+                                      terminated)
         observation = observation_next
         Z += reward
         L += 1

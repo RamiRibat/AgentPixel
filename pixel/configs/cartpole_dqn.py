@@ -45,6 +45,7 @@ configurations = {
         # 'on-policy': False,
         # 'model-based': False,
         'hyper-parameters': {
+            'n_steps': 1,
             'gamma': 0.99,
             'init-epsilon': 1.0,
             'max-epsilon': 1.0,

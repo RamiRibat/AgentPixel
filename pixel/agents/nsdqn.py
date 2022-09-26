@@ -20,60 +20,14 @@ from pixel.agents.dqn import DQNLearner
 from pixel.networks.value_functions import QNetwork
 
 
-# class PERAgent:
-#     def __init__(self,
-#                  obs_dim, act_dim,
-#                  configs, seed, device):
-#         print('Initialize PER Agent')
-#         self.obs_dim, self.act_dim= obs_dim, act_dim
-#         self.configs, self.seed = configs, seed
-#         self._device_ = device
-#         self.online_net, self.target_net = None, None
-#         self._build()
-#
-#     def _build(self):
-#         self.online_net, self.target_net = self._set_q(), self._set_q()
-#         self.target_net.load_state_dict(self.online_net.state_dict())
-#         # for p in self.target_net.parameters(): p.requires_grad = False
-#         self.target_net.eval()
-#
-#     def _set_q(self):
-#         obs_dim, act_dim = self.obs_dim, self.act_dim
-#         net_configs = self.configs['critic']['network']
-#         seed, device = self.seed, self._device_
-#         return QNetwork(obs_dim, act_dim, net_configs, seed, device)
-#
-#     def get_q(self, observation, action):
-#         return self.online_net(observation).gather(1, action)
-#
-#     def get_q_target(self, observation):
-#         with T.no_grad():
-#             return self.target_net(observation).max(dim=1, keepdim=True)[0]
-#
-#     def get_greedy_action(self, observation, evaluation=False): # Select Action(s) based on eps_greedy
-#         with T.no_grad():
-#             return self.online_net(T.FloatTensor(observation).to(self._device_)).argmax().cpu().numpy()
-#
-#     def get_eps_greedy_action(self, observation, epsilon=0.001, evaluation=False): # Select Action(s) based on eps_greedy
-#         if np.random.random() < epsilon:
-#             return np.random.randint(0, self.act_dim)
-#         else:
-#             return self.get_greedy_action(observation)
-#
-#     def get_action(observation, epsilon=0.001):
-#         return self.get_eps_greedy_action(observation, epsilon)
-#
 
-
-# class PERLearner(MFRL):
-class PERLearner(DQNLearner):
-# class PERLearner(DDQNLearner):
+class nsDQNLearner(DQNLearner):
     """
-    Prioritized Replay Buffer (PER) [ DeepMind(Shaul et al.); ICLR 2016 ]
+    Multi-Steps Deep Q Network (DQN) [(? et al.); 20??]
     """
     def __init__(self, exp_prefix, configs, seed, device, wb):
-        super(PERLearner, self).__init__(exp_prefix, configs, seed, device, wb)
-        print('Initialize PER Learner')
+        super(nsDQNLearner, self).__init__(exp_prefix, configs, seed, device)
+        print('Initialize DQN Learner')
         self.configs = configs
         self.seed = seed
         self._device_ = device
@@ -81,14 +35,14 @@ class PERLearner(DQNLearner):
         # self._build()
 
     # def _build(self):
-    #     super(PERLearner, self)._build()
-    #     self._build_per()
-
-    # def _build_per(self):
+    #     super(DQNLearner, self)._build()
+    #     self._build_dqn()
+    #
+    # def _build_dqn(self):
     #     self._set_agent()
     #
     # def _set_agent(self):
-    #     self.agent = PERAgent(self.obs_dim, self.act_dim, self.configs, self.seed, self._device_)
+    #     self.agent = DQNAgent(self.obs_dim, self.act_dim, self.configs, self.seed, self._device_)
 
     # def learn(self):
     #     LT = self.configs['learning']['steps']
@@ -102,13 +56,13 @@ class PERLearner(DQNLearner):
     #
     #     oldJq = 0
     #     Z, S, L, Traj = 0, 0, 0, 0
-    #     PERLT = trange(1, LT+1, desc=alg)
+    #     DQNLT = trange(1, LT+1, desc=alg)
     #     observation, info = self.learn_env.reset()
     #     logs, ZList, LList, JQList = dict(), [0], [0], []
     #     termZ, termL = 0, 0
     #     # EPS = []
     #
-    #     for t in PERLT:
+    #     for t in DQNLT:
     #         observation, Z, L, Traj_new = self.interact(observation, Z, L, t, Traj, epsilon)
     #         if (Traj_new - Traj) > 0:
     #             # termZ, termL = lastZ, lastL
@@ -133,10 +87,13 @@ class PERLearner(DQNLearner):
     #             logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
     #             logs['learning/real/rollout_return_std    '] = np.std(ZList)
     #             logs['learning/real/rollout_length        '] = np.mean(LList)
+    #             # logs['learning/real/rollout_return_mean   '] = termZ
+    #             # logs['learning/real/rollout_return_std    '] = termZ
+    #             # logs['learning/real/rollout_length        '] = termL
     #             logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
     #             logs['evaluation/episodic_return_std      '] = np.std(VZ)
     #             logs['evaluation/episodic_length_mean     '] = np.mean(VL)
-    #             PERLT.set_postfix({'Traj': Traj, 'learnZ': np.mean(ZList), 'evalZ': np.mean(VZ)})
+    #             DQNLT.set_postfix({'Traj': Traj, 'learnZ': np.mean(ZList), 'evalZ': np.mean(VZ)})
     #             if self.WandB: wandb.log(logs, step=t)
     #
     #     VZ, VS, VL = self.evaluate()
@@ -146,6 +103,9 @@ class PERLearner(DQNLearner):
     #     logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
     #     logs['learning/real/rollout_return_std    '] = np.std(ZList)
     #     logs['learning/real/rollout_length        '] = np.mean(LList)
+    #     # logs['learning/real/rollout_return_mean   '] = termZ
+    #     # logs['learning/real/rollout_return_std    '] = termZ
+    #     # logs['learning/real/rollout_length        '] = termL
     #     logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
     #     logs['evaluation/episodic_return_std      '] = np.std(VZ)
     #     logs['evaluation/episodic_length_mean     '] = np.mean(VL)
@@ -154,55 +114,60 @@ class PERLearner(DQNLearner):
     #     self.learn_env.close()
     #     self.eval_env.close()
 
-    # def train_dqn(self, t) -> T.Tensor:
-    #     batch_size = self.configs['data']['batch_size']
-    #     TUf = self.configs['algorithm']['hyper-parameters']['target_update_frequency']
-    #     batch = self.buffer.sample_batch(batch_size, device=self._device_)
-    #     Jq = self.update_online_net(batch)
-    #     Jq = Jq.item()
-    #     if ((t-1)%TUf == 0): self.update_target_net()
-    #     return Jq
-
-    def update_online_net(self, batch: Dict[str, np.ndarray]) -> T.Tensor:
-        gamma = self.configs['algorithm']['hyper-parameters']['gamma']
-        prio_eps = self.configs['algorithm']['hyper-parameters']['prio-eps']
-
+    def train_dqn(self, t) -> T.Tensor:
+        batch_size = self.configs['data']['batch_size']
+        TUf = self.configs['algorithm']['hyper-parameters']['target_update_frequency']
+        batch = self.buffer.sample_batch(batch_size, device=self._device_)
         idxs = batch['idxs']
-        observations = T.FloatTensor(batch['observations']).to(self._device_)
-        actions = T.LongTensor(batch['actions']).to(self._device_)
-        rewards = T.FloatTensor(batch['rewards']).to(self._device_)
-        observations_next = T.FloatTensor(batch['observations_next']).to(self._device_)
-        terminals = T.FloatTensor(batch['terminals']).to(self._device_)
-        importance_ws = T.FloatTensor(batch['importance_ws']).to(self._device_)
+        batch_n = self.buffer_n.sample_batch_from_idxs(idxs, device=self._device_)
+        Jq = self.update_online_net(batch)
+        Jq = Jq.item()
+        if ((t-1)%TUf == 0): self.update_target_net()
+        return Jq
 
-        q_value = self.agent.get_q(observations, actions)
-        q_next = self.agent.get_q_target(observations_next)
-        q_target = rewards + gamma * (1 - terminals) * q_next
-        Jq_biased = F.smooth_l1_loss(q_value, q_target, reduction='none')
-        Jq = T.mean(importance_ws * Jq_biased)
+    def update_online_net(
+        self,
+        batch: Dict[str, np.ndarray],
+        batch_n: Dict[str, np.ndarray]) -> T.Tensor:
+
+        n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
+        gamma = self.configs['algorithm']['hyper-parameters']['gamma']
+        gamma_n = gamma ** n_steps
+
+        Jq = 0
+
+        for g, b in zip([gamma, gamma_n], [batch, batch_n]):
+            observations = T.FloatTensor(b['observations']).to(self._device_)
+            actions = T.LongTensor(b['actions']).to(self._device_)
+            rewards = T.FloatTensor(b['rewards']).to(self._device_)
+            observations_next = T.FloatTensor(b['observations_next']).to(self._device_)
+            terminals = T.FloatTensor(b['terminals']).to(self._device_)
+
+            q_value = self.agent.get_q(observations, actions)
+            q_next = self.agent.get_q_target(observations_next)
+            q_target = rewards + g * (1 - terminals) * q_next
+            Jq_ = F.smooth_l1_loss(q_value, q_target)
+
+            Jq += Jq_
 
         self.agent.online_net.optimizer.zero_grad()
         Jq.backward()
         self.agent.online_net.optimizer.step()
 
-        Jq_biased = Jq_biased.detach().cpu().numpy()
-        new_prios = Jq_biased + prio_eps
-        self.buffer.update_prios(idxs, new_prios)
-
         return Jq
 
     # def update_target_net(self) -> None:
     #     self.agent.target_net.load_state_dict(self.agent.online_net.state_dict())
-
+    #
     # def update_epsilon(self, epsilon):
     #     max_epsilon = self.configs['algorithm']['hyper-parameters']['max-epsilon']
     #     min_epsilon = self.configs['algorithm']['hyper-parameters']['min-epsilon']
     #     epsilon_decay = self.configs['algorithm']['hyper-parameters']['epsilon-decay']
     #     return max(min_epsilon,
     #                epsilon - (max_epsilon - min_epsilon) * epsilon_decay)
-
-    def func2(self):
-        pass
+    #
+    # def func2(self):
+    #     pass
 
 
 
@@ -210,7 +175,7 @@ class PERLearner(DQNLearner):
 
 def main(exp_prefix, config, seed, device, wb):
 
-    print('Start PER experiment...')
+    print('Start DQN experiment...')
     print('\n')
 
     configs = config.configurations
@@ -234,12 +199,12 @@ def main(exp_prefix, config, seed, device, wb):
             config=configs
         )
 
-    per_learner = PERLearner(exp_prefix, configs, seed, device, wb)
+    dqn_learner = DQNLearner(exp_prefix, configs, seed, device, wb)
 
-    per_learner.learn()
+    dqn_learner.learn()
 
     print('\n')
-    print('... End PER experiment')
+    print('... End DQN experiment')
 
 
 

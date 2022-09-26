@@ -10,9 +10,9 @@ class QNetwork(nn.Module):
     def __init__(self, obs_dim, act_dim, net_configs, seed, device):
         super(QNetwork, self).__init__()
         optimizer, lr = 'T.optim.' + net_configs['optimizer'], net_configs['lr']
-        self.qnet = Network(obs_dim, act_dim, net_configs).to(device)
-        # self.to(device)
-        self.optimizer = eval(optimizer)(self.parameters())
+        self.qnet = Network(obs_dim, act_dim, net_configs)
+        self.to(device)
+        self.optimizer = eval(optimizer)(self.parameters(), lr)
 
     def forward(self, observation: T.Tensor) -> T.Tensor:
         return self.qnet(observation)

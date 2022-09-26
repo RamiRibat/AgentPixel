@@ -33,7 +33,6 @@ class DQNAgent:
     def _build(self):
         self.online_net, self.target_net = self._set_q(), self._set_q()
         self.target_net.load_state_dict(self.online_net.state_dict())
-        # for p in self.target_net.parameters(): p.requires_grad = False
         self.target_net.eval()
 
     def _set_q(self):
@@ -174,9 +173,6 @@ class DQNLearner(MFRL):
         rewards = T.FloatTensor(batch['rewards']).to(self._device_)
         observations_next = T.FloatTensor(batch['observations_next']).to(self._device_)
         terminals = T.FloatTensor(batch['terminals']).to(self._device_)
-        # print('O: ', observations.shape)
-        # print('A: ', actions.shape)
-        # print('R: ', rewards.shape)
 
         q_value = self.agent.get_q(observations, actions)
         q_next = self.agent.get_q_target(observations_next)
@@ -220,7 +216,7 @@ def main(exp_prefix, config, seed, device, wb):
     env_name = configs['environment']['name']
     env_domain = configs['environment']['domain']
 
-    group_name = f"{env_name}-{alg_name}-6" # H < -2.7
+    group_name = f"{env_name}-{alg_name}" # H < -2.7
     exp_prefix = f"seed:{seed}"
     # print('group: ', group_name)
 
