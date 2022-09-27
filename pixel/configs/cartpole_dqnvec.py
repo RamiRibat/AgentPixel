@@ -19,13 +19,13 @@ configurations = {
         'horizon': int(500),
         'state': 'discrete',
         'action': 'discrete',
-        'vectorized': False,
+        'n-envs': 4,
     },
 
     'learning': {
         'steps': int(2e4),
         # 'epoch_steps': int(1e3),
-        'init_steps': int(128),
+        'init_steps': int(32),
         'expl_steps': int(0),
         'frequency': 1,
         'grad_steps': 1,
@@ -40,25 +40,23 @@ configurations = {
     },
 
     'algorithm': {
-        'name': 'Rainbow',
+        'name': 'DQNVEC',
         # 'model': None,
         # 'on-policy': False,
         # 'model-based': False,
         'hyper-parameters': {
+            'n_steps': 1,
             'gamma': 0.99,
-            'alpha': 0.2,
-            'beta': 0.6,
-            'prio-eps': 1e-6,
-            'v-min': 0.0, #
-            'v-max': 200.0,
-            'atom-size': 51,
-            'n-steps': 3,
+            'init-epsilon': 1.0,
+            'max-epsilon': 1.0,
+            'min-epsilon': 0.1,
+            'epsilon-decay': 1/2000,
             'target_update_frequency': 100,
         }
     },
 
     'actor': {
-        'type': 'greedy'
+        'type': 'eps-greedy'
     },
 
     'critic': {
@@ -73,9 +71,9 @@ configurations = {
     },
 
     'data': {
-        'buffer_type': 'per+nSteps',
-        'buffer_size': int(1e4),
-        'batch_size': 128,
+        'buffer_type': 'simple',
+        'buffer_size': int(1e3),
+        'batch_size': 32,
 
     }
 

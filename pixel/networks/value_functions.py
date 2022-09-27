@@ -8,6 +8,7 @@ from pixel.networks.dnns import Network, NoisyNetwork
 
 class QNetwork(nn.Module):
     def __init__(self, obs_dim, act_dim, net_configs, seed, device):
+        print('Initialize QNetwork')
         super(QNetwork, self).__init__()
         optimizer, lr = 'T.optim.' + net_configs['optimizer'], net_configs['lr']
         self.qnet = Network(obs_dim, act_dim, net_configs)
@@ -15,24 +16,29 @@ class QNetwork(nn.Module):
         self.optimizer = eval(optimizer)(self.parameters(), lr)
 
     def forward(self, observation: T.Tensor) -> T.Tensor:
-        return self.qnet(observation)
+        # print('q-observation: ', observation.shape)
+        q = self.qnet(observation)
+        # print('q-value: ', q.shape)
+        return q
 
 
 class NDCQNetwork(nn.Module):
     def __init__(self, obs_dim, act_dim, atom_size, v_min, v_max, net_configs, seed, device):
-        super(QNetwork, self).__init__()
+        print('Initialize NDCQNetwork')
+        super(NDCQNetwork, self).__init__()
         optimizer, lr = 'T.optim.' + net_configs['optimizer'], net_configs['lr']
         self.act_dim, self.atom_size = act_dim, atom_size
         self.support = support = T.linspace(v_min, v_max, atom_size)
         self.feature_layer = nn.Sequential(nn.Linear(obs_dim, 128), nn.ReLU())
-        self.v_net = NoisyNetwork(obs_dim, 1*atom_size, net_configs)
-        self.adv_net = NoisyNetwork(obs_dim, act_dim*atom_size, net_configs)
+        self.v_net = NoisyNetwork(128, 1*atom_size, net_configs)
+        self.adv_net = NoisyNetwork(128, act_dim*atom_size, net_configs)
         self.to(device)
         self.optimizer = eval(optimizer)(self.parameters(), lr)
 
     def forward(self, observation: T.Tensor) -> T.Tensor:
         distribution = self.distribution(observation)
-        return T.sum(distribution*self.support, dim=2)
+        q = T.sum(distribution*self.support, dim=2)
+        return q
 
     def distribution(self, observation: T.Tensor) -> T.Tensor:
         feature = self.feature_layer(observation)
@@ -44,6 +50,10 @@ class NDCQNetwork(nn.Module):
     def reset_noise(self):
         self.v_net.reset_noise()
         self.adv_net.reset_noise()
+
+    def _evaluation_mode(self, mode=False):
+        self.v_net._evaluation_mode(mode)
+        self.adv_net._evaluation_mode(mode)
 
 
 

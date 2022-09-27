@@ -42,6 +42,8 @@ class DQNAgent:
         return QNetwork(obs_dim, act_dim, net_configs, seed, device)
 
     def get_q(self, observation, action):
+        print('observation: ', observation.shape)
+        print('action: ', action.shape)
         return self.online_net(observation).gather(1, action)
 
     def get_q_target(self, observation):
@@ -51,6 +53,10 @@ class DQNAgent:
     def get_greedy_action(self, observation, evaluation=False): # Select Action(s) based on eps_greedy
         with T.no_grad():
             return self.online_net(T.FloatTensor(observation).to(self._device_)).argmax().cpu().numpy()
+            # print('q-observation: ', observation)
+            # action = self.online_net(T.FloatTensor(observation).to(self._device_)).argmax().cpu().numpy()
+            # print('q-action: ', action)
+            # return action
 
     def get_eps_greedy_action(self, observation, epsilon=0.001, evaluation=False): # Select Action(s) based on eps_greedy
         if np.random.random() < epsilon:

@@ -18,9 +18,15 @@ class NoisyLinear(nn.Module):
         self.register_buffer('bias_epsilon', T.empty(out_features))
         self.reset_parametrs()
         self.reset_noise()
+        self.evaluation_mode = False
 
     def forward(self, x: T.Tensor) -> T.Tensor:
+        # print('evaluation_mode: ', self.evaluation_mode)
+        # print('x: ', x.shape)
+        # print('weight_mu: ', self.weight_mu.shape)
+        # print('weight_sigma: ', self.weight_sigma.shape)
         if self.evaluation_mode:
+            # print('evaluation_mode: ', self.evaluation_mode)
             return F.linear(x,
                             self.weight_mu,
                             self.bias_mu)
@@ -37,7 +43,7 @@ class NoisyLinear(nn.Module):
         self.bias_sigma.data.fill_(self.std_init / math.sqrt(self.in_features))
 
     def reset_noise(self):
-        print('Reset NoisyLinear noise')
+        # print('Reset NoisyLinear noise')
         epsilon_in = self.scale_noise(self.in_features)
         epsilon_out = self.scale_noise(self.out_features)
         self.weight_epsilon.copy_(epsilon_out.ger(epsilon_in))
@@ -45,7 +51,7 @@ class NoisyLinear(nn.Module):
 
     @staticmethod
     def scale_noise(size: int) -> T.Tensor:
-        x = T.randn(size, device=self.weight_mu.device)
+        x = T.randn(size)
         return x.sign().mul_(x.abs().sqrt_())
 
 
@@ -71,11 +77,11 @@ class NoisyNetwork(nn.Module):
     Reference: Noisy Networks for Exploration (DeepMind; ICLR 2018)
     """
     def __init__(self, in_dim: int, out_dim: int, net_configs: Dict):
-        super(Network, self).__init__()
+        super(NoisyNetwork, self).__init__()
         self.net = nn.Sequential(
-            nn.NoisyLinear(in_dim, 128),
+            NoisyLinear(in_dim, 128),
             nn.ReLU(),
-            nn.NoisyLinear(128, out_dim)
+            NoisyLinear(128, out_dim)
         )
 
     def forward(self, x: T.Tensor) -> T.Tensor:
@@ -85,6 +91,12 @@ class NoisyNetwork(nn.Module):
         for m in self.net.modules():
             if isinstance(m, NoisyLinear):
                 m.reset_noise()
+
+    def _evaluation_mode(self, mode=False):
+        for m in self.net.modules():
+            if isinstance(m, NoisyLinear):
+                m.evaluation_mode = mode
+
 
 
 

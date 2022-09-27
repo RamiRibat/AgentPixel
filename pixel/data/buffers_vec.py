@@ -9,18 +9,20 @@ import torch as T
 class ReplayBuffer:
     "Simple Replay Buffer for Discrete Action Space (Numpy)"
     # def __init__(self, obs_dim: int, act_dim: int, max_size: int, batch_size: int = 32, seed=0, device='cpu'):
-    def __init__(self, obs_dim: int, max_size: int, batch_size: int = 32, seed = 0, device = 'cpu'):
+    def __init__(self, obs_dim: int, num_envs: int, max_size: int, batch_size: int = 32, seed = 0, device = 'cpu'):
+        # max_size = max_size//num_envs
+        # self.obs_buf = np.zeros([max_size, n_envs, obs_dim], dtype=np.float32)
+        # self.act_buf = np.zeros([max_size, n_envs, 1], dtype=np.float32)
+        # self.rew_buf = np.zeros([max_size, n_envs, 1], dtype=np.float32)
+        # self.obs_next_buf = np.zeros([max_size, n_envs, obs_dim], dtype=np.float32)
+        # self.ter_buf = np.zeros([max_size, n_envs, 1], dtype=np.float32)
         self.obs_buf = np.zeros([max_size, obs_dim], dtype=np.float32)
         self.act_buf = np.zeros([max_size, 1], dtype=np.float32)
         self.rew_buf = np.zeros([max_size, 1], dtype=np.float32)
         self.obs_next_buf = np.zeros([max_size, obs_dim], dtype=np.float32)
         self.ter_buf = np.zeros([max_size, 1], dtype=np.float32)
-        # self.obs_buf = np.zeros([max_size, obs_dim], dtype=np.float32)
-        # self.act_buf = np.zeros([max_size], dtype=np.float32)
-        # self.rew_buf = np.zeros([max_size], dtype=np.float32)
-        # self.obs_next_buf = np.zeros([max_size, obs_dim], dtype=np.float32)
-        # self.ter_buf = np.zeros(max_size, dtype=np.float32)
         self.ptr, self.size, self.max_size, self.batch_size = 0, 0, max_size, batch_size
+        self.obs_dim, self.num_envs = obs_dim, num_envs
         self._device_ = device
 
     def store_sarsd(self,
@@ -29,16 +31,35 @@ class ReplayBuffer:
                     r: float,
                     o_next: np.ndarray,
                     d: bool) -> None:
-        self.obs_buf[self.ptr] = o
-        self.act_buf[self.ptr] = a
-        self.rew_buf[self.ptr] = r
-        self.obs_next_buf[self.ptr] = o_next
-        self.ter_buf[self.ptr] = d
-        self.ptr = (self.ptr+1) % self.max_size
-        self.size = min(self.size+1, self.max_size)
+        num_envs = self.num_envs
+        # num_envs = o.shape[0] #self.num_envs
+        # print('num_envs: ', num_envs)
+        # self.obs_buf[self.ptr] = o
+        # self.act_buf[self.ptr] = a.reshape(-1,1)
+        # self.rew_buf[self.ptr] = r.reshape(-1,1)
+        # self.obs_next_buf[self.ptr] = o_next
+        # self.ter_buf[self.ptr] = d.reshape(-1,1)
+        # self.ptr = (self.ptr+1) % self.max_size
+        # self.size = min(self.size+1, self.max_size)
+        if self.ptr+num_envs > self.max_size:
+            self.ptr = 0
+        self.obs_buf[self.ptr:self.ptr+num_envs] = o
+        self.act_buf[self.ptr:self.ptr+num_envs] = a.reshape(-1,1)
+        self.rew_buf[self.ptr:self.ptr+num_envs] = r.reshape(-1,1)
+        self.obs_next_buf[self.ptr:self.ptr+num_envs] = o_next
+        self.ter_buf[self.ptr:self.ptr+num_envs] = d.reshape(-1,1)
+        self.ptr = (self.ptr+num_envs) % self.max_size
+        self.size = min(self.size+num_envs, self.max_size)
 
     def sample_batch(self, batch_size=32, device='cpu') -> Dict[str, np.ndarray]:
-        # idxs = np.random.randint(0, self.size, size=batch_size)
+        # print(f'sample_batch: bs={batch_size} | size={self.size}')
+        # obs_dim, num_envs = self.obs_dim, self.num_envs
+        # idxs = np.random.choice(self.size, size=batch_size, replace=False)
+        # batch = dict(observations=self.obs_buf[idxs].reshape(-1, obs_dim),
+        # 			 actions=self.act_buf[idxs].reshape(-1, 1),
+        # 			 rewards=self.rew_buf[idxs].reshape(-1, 1),
+        # 			 observations_next=self.obs_next_buf[idxs].reshape(-1, obs_dim),
+        # 			 terminals=self.ter_buf[idxs].reshape(-1, 1))
         idxs = np.random.choice(self.size, size=batch_size, replace=False)
         batch = dict(observations=self.obs_buf[idxs],
         			 actions=self.act_buf[idxs],
@@ -211,56 +232,3 @@ class PERBuffer(ReplayBuffer):
         max_w = (p_min * len(self)) ** (-beta)
         importance_w_normz = importance_w / max_w
         return importance_w_normz
-
-
-
-
-
-
-
-
-
-
-
-class ERMemory:
-    def __init__(self, maxlen):
-        self.buffer = deque(maxlen=maxlen)
-
-    def add(self, experience):
-        self.buffer.append(experience)
-
-    def sample(self, batch_size):
-        sample_size = min(len(self.buffer), batch_size)
-        samples = random.choices(self.buffer, k=sample_size)
-        return map(list, zip(*samples))
-
-class PERMemory:
-    def __init__(self, maxlen):
-        self.buffer = deque(maxlen=maxlen)
-        self.priorities = deque(maxlen=maxlen)
-
-    def add(self, experience):
-        self.buffer.append(experience)
-        self.priorities.append(max(self.priorities, defaul=1))
-
-    def sample(self, batch_size, prio_scale=1.0):
-        sample_size = min(len(self.buffer), batch_size)
-        sample_probs = self._get_probs(prio_scale)
-        # samples = random.choices(self.buffer, k=sample_size)
-        sample_idxs = random.choices(range(len(self.buffer)), k=sample_size, weights=sample_probs)
-        samples = np.array(self.buffer)[sample_idxs]
-        importance_w = self._get_importance(sample_probs[sample_idxs])
-        return map(list, zip(*samples)), importance_w
-
-    def set_prios(self, idxs, error, offset=0.1):
-        for i, e in zip(idxs, error):
-            self.priorities[i] = abs(e) + offset
-
-    def _get_probs(self, prio_scale):
-        scaled_prios = np.array(self.priorities) ** prio_scale
-        sample_probs = scaled_prios / sum(scaled_prios)
-        return sample_probs
-
-    def _get_importance(self, probs):
-        importance_w = (1/len(beffer)) * (1/probs)
-        return importance_w / max(importance_w)
