@@ -86,7 +86,14 @@ class MFRL:
         return observation, Z, L, Traj
 
     def interact_vec(self, observation, mask, Z, L, t, Traj, epsilon=0.001):
+        num_envs = self.configs['environment']['n-envs']
         xT = self.configs['learning']['expl_steps']
+
+        if mask.sum()==0:
+            # print('Reset Env')
+            Z, S, L, Traj = 0, 0, 0, Traj+1
+            observation, info = self.learn_envs.reset()
+            mask = np.ones([num_envs], dtype=bool)
 
         if t > xT:
             # action = self.agent.get_eps_greedy_action(observation, epsilon=epsilon)
@@ -95,27 +102,31 @@ class MFRL:
         # else:
         #     action = self.learn_envs.action_space.sample()
         observation_next, reward, terminated, truncated, info = self.learn_envs.step(action)
-        print('observation: ', observation.shape)
-        print('action: ', action.shape)
-        print('mask: ', mask)
+        # print('observation: ', observation.shape)
+        # print('action: ', action.shape)
+        # print('mask: ', mask)
         # print('terminated: ', terminated)
-        self.store_sarsd_in_buffer(observation, action, reward, observation_next, terminated)
-        # self.store_sarsd_in_buffer(
-        #     observation[non_terminated],
-        #     action[non_terminated],
-        #     reward[non_terminated],
-        #     observation_next[non_terminated],
-        #     terminated[non_terminated])
+        # print('truncated: ', truncated)
+        # self.store_sarsd_in_buffer(observation, action, reward, observation_next, terminated)
+        self.store_sarsd_in_buffer(
+            observation[mask],
+            action[mask],
+            reward[mask],
+            observation_next[mask],
+            terminated[mask])
         observation = observation_next
-        # non_terminated[non_terminated] = ~terminated[non_terminated]
-        mask = ~terminated
+        mask[mask] = ~terminated[mask]
+        mask[mask] = ~truncated[mask]
+        # mask = ~terminated
 
         Z += reward
         L += 1
-        # if terminated or truncated:
+        # if mask.sum()==0:
+        #     # print('Reset Env')
         #     Z, S, L, Traj = 0, 0, 0, Traj+1
         #     observation, info = self.learn_envs.reset()
-        return observation, non_terminated, Z, L, Traj
+        #     mask = np.ones([num_envs], dtype=bool)
+        return observation, mask, Z, L, Traj
 
     def store_sarsd_in_buffer(
         self,

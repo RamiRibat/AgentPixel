@@ -114,9 +114,10 @@ class DQNLearner(MFRL):
         epsilon = self.configs['algorithm']['hyper-parameters']['init-epsilon']
 
         oldJq = 0
+        env_steps, g = 0, 0
         Z, S, L, Traj = 0, 0, 0, 0
         # DQNLT = trange(1, LT+1, desc=alg)
-        DQNLT = trange(1, LT+1, num_envs, desc=alg)
+        DQNLT = trange(1, LT+1, desc=alg)
         # kwargs = dict(start=1, end=LT+1, step=num_envs, desc=alg)
         # DQNLT = trange(kwargs=kwargs)
         observation, info = self.learn_envs.reset()
@@ -126,6 +127,8 @@ class DQNLearner(MFRL):
         termZ, termL = 0, 0
         # EPS = []
 
+        start_time_real = time.time()
+
         for t in DQNLT:
             observation, mask, Z, L, Traj_new = self.interact_vec(observation, mask, Z, L, t, Traj, epsilon)
             if (Traj_new - Traj) > 0:
@@ -134,53 +137,63 @@ class DQNLearner(MFRL):
                 lastZ, lastL = Z, L
             Traj = Traj_new
 
-            # if (t>iT):
-            # # if (t>iT) and ((t-1)%Lf == 0):
-            # # if (t>iT) and ((t//num_envs)%(Lf//num_envs))==0:
-            #     # print('Learning at', t)
-            #     Jq = self.train_dqn(t)
-            #     oldJq = Jq
-            #     epsilon = self.update_epsilon(epsilon)
-            # else:
-            #     Jq = oldJq
+            env_steps += mask.sum()
 
-            # if ((t-1)%Vf == 0):
-            if ((t//num_envs)%(Vf//num_envs))==0:
+            if (env_steps>iT):
+                for _ in range(mask.sum()):
+                    Jq = self.train_dqn(g)
+                    oldJq = Jq
+                    epsilon = self.update_epsilon(epsilon)
+                    g += 1
+            else:
+                Jq = oldJq
+
+            # if ((env_steps-1)%Vf == 0):
+            if ((env_steps//num_envs)%(Vf//num_envs))==0:
                 VZ, VS, VL = self.evaluate()
                 logs['data/env_buffer_size                '] = self.buffer.size
-                # logs['training/dqn/Jq                     '] = Jq
+                logs['training/dqn/Jq                     '] = Jq
                 logs['training/dqn/epsilon                '] = epsilon
-                logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
-                logs['learning/real/rollout_return_std    '] = np.std(ZList)
-                logs['learning/real/rollout_length        '] = np.mean(LList)
+                # logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
+                # logs['learning/real/rollout_return_std    '] = np.std(ZList)
+                # logs['learning/real/rollout_length        '] = np.mean(LList)
                 logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
                 logs['evaluation/episodic_return_std      '] = np.std(VZ)
                 logs['evaluation/episodic_length_mean     '] = np.mean(VL)
-                DQNLT.set_postfix({'T': f'{t}/{LT}', 'Z': np.mean(ZList), 'VZ': np.mean(VZ)})
-                if self.WandB: wandb.log(logs, step=t)
+                logs['time/total                          '] = time.time() - start_time_real
+                # DQNLT.set_postfix({'T': f'{t}/{LT}', 'Z': np.mean(ZList), 'VZ': np.mean(VZ)})
+                DQNLT.set_postfix({'T': f'{env_steps}/{LT}', 'VZ': np.mean(VZ)})
+                if self.WandB: wandb.log(logs, step=env_steps)
+
+            if env_steps >= LT: break
 
         VZ, VS, VL = self.evaluate()
         logs['data/env_buffer_size                '] = self.buffer.size
-        # logs['training/dqn/Jq                     '] = Jq
+        logs['training/dqn/Jq                     '] = Jq
         logs['training/dqn/epsilon                '] = epsilon
-        logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
-        logs['learning/real/rollout_return_std    '] = np.std(ZList)
-        logs['learning/real/rollout_length        '] = np.mean(LList)
+        # logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
+        # logs['learning/real/rollout_return_std    '] = np.std(ZList)
+        # logs['learning/real/rollout_length        '] = np.mean(LList)
         logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
         logs['evaluation/episodic_return_std      '] = np.std(VZ)
         logs['evaluation/episodic_length_mean     '] = np.mean(VL)
-        if self.WandB: wandb.log(logs, step=t)
+        logs['time/total                          '] = time.time() - start_time_real
+        if self.WandB: wandb.log(logs, step=env_steps)
 
         self.learn_envs.close()
         # self.eval_env.close()
 
-    def train_dqn(self, t) -> T.Tensor:
+    def train_dqn(self, g) -> T.Tensor:
+        num_envs = self.configs['environment']['n-envs']
         batch_size = self.configs['data']['batch_size']
         TUf = self.configs['algorithm']['hyper-parameters']['target_update_frequency']
         batch = self.buffer.sample_batch(batch_size, device=self._device_)
         Jq = self.update_online_net(batch)
         Jq = Jq.item()
-        if ((t-1)%TUf == 0): self.update_target_net()
+        if ((g)%TUf == 0):
+        # if (((t//num_envs)%(TUf//num_envs)) == 0):
+            # print(f'update target net')
+            self.update_target_net()
         return Jq
 
     def update_online_net(self, batch: Dict[str, np.ndarray]) -> T.Tensor:
@@ -240,8 +253,9 @@ def main(exp_prefix, config, seed, device, wb):
     alg_name = configs['algorithm']['name']
     env_name = configs['environment']['name']
     env_domain = configs['environment']['domain']
+    num_envs = configs['environment']['n-envs']
 
-    group_name = f"{env_name}-{alg_name}" # H < -2.7
+    group_name = f"{env_name}-{alg_name}-X{num_envs}" # H < -2.7
     exp_prefix = f"seed:{seed}"
     # print('group: ', group_name)
 

@@ -31,8 +31,8 @@ class ReplayBuffer:
                     r: float,
                     o_next: np.ndarray,
                     d: bool) -> None:
-        num_envs = self.num_envs
-        # num_envs = o.shape[0] #self.num_envs
+        # num_envs = self.num_envs
+        n_steps = o.shape[0] #self.num_envs
         # print('num_envs: ', num_envs)
         # self.obs_buf[self.ptr] = o
         # self.act_buf[self.ptr] = a.reshape(-1,1)
@@ -41,15 +41,15 @@ class ReplayBuffer:
         # self.ter_buf[self.ptr] = d.reshape(-1,1)
         # self.ptr = (self.ptr+1) % self.max_size
         # self.size = min(self.size+1, self.max_size)
-        if self.ptr+num_envs > self.max_size:
+        if self.ptr+n_steps > self.max_size:
             self.ptr = 0
-        self.obs_buf[self.ptr:self.ptr+num_envs] = o
-        self.act_buf[self.ptr:self.ptr+num_envs] = a.reshape(-1,1)
-        self.rew_buf[self.ptr:self.ptr+num_envs] = r.reshape(-1,1)
-        self.obs_next_buf[self.ptr:self.ptr+num_envs] = o_next
-        self.ter_buf[self.ptr:self.ptr+num_envs] = d.reshape(-1,1)
-        self.ptr = (self.ptr+num_envs) % self.max_size
-        self.size = min(self.size+num_envs, self.max_size)
+        self.obs_buf[self.ptr:self.ptr+n_steps] = o
+        self.act_buf[self.ptr:self.ptr+n_steps] = a.reshape(-1,1)
+        self.rew_buf[self.ptr:self.ptr+n_steps] = r.reshape(-1,1)
+        self.obs_next_buf[self.ptr:self.ptr+n_steps] = o_next
+        self.ter_buf[self.ptr:self.ptr+n_steps] = d.reshape(-1,1)
+        self.ptr = (self.ptr+n_steps) % self.max_size
+        self.size = min(self.size+n_steps, self.max_size)
 
     def sample_batch(self, batch_size=32, device='cpu') -> Dict[str, np.ndarray]:
         # print(f'sample_batch: bs={batch_size} | size={self.size}')

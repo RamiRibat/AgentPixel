@@ -19,7 +19,10 @@ configurations = {
         'horizon': int(500),
         'state': 'discrete',
         'action': 'discrete',
-        'n-envs': 4,
+        # 'n-envs': 2,
+        # 'n-envs': 4,
+        # 'n-envs': 8,
+        'n-envs': 16,
     },
 
     'learning': {
