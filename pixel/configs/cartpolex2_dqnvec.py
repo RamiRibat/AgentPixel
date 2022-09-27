@@ -26,7 +26,7 @@ configurations = {
     },
 
     'learning': {
-        'steps': int(2e4),
+        'steps': int(5e4),
         # 'epoch_steps': int(1e3),
         'init_steps': int(32),
         'expl_steps': int(0),

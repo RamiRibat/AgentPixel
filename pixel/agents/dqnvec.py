@@ -251,7 +251,7 @@ def main(exp_prefix, config, seed, device, wb):
         random.seed(seed), np.random.seed(seed), T.manual_seed(seed)
 
     alg_name = configs['algorithm']['name']
-    env_name = configs['environment']['name']
+    env_name = 'CPv1' #configs['environment']['name']
     env_domain = configs['environment']['domain']
     num_envs = configs['environment']['n-envs']
 

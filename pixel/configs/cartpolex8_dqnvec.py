@@ -19,14 +19,14 @@ configurations = {
         'horizon': int(500),
         'state': 'discrete',
         'action': 'discrete',
-        'n-envs': 2,
+        # 'n-envs': 2,
         # 'n-envs': 4,
-        # 'n-envs': 8,
+        'n-envs': 8,
         # 'n-envs': 16,
     },
 
     'learning': {
-        'steps': int(2e4),
+        'steps': int(5e4),
         # 'epoch_steps': int(1e3),
         'init_steps': int(32),
         'expl_steps': int(0),
