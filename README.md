@@ -7,14 +7,14 @@ Algorithms we are re-implementing/plannning to re-implement:
 
 | Agents | Classic | Atari | MuJoCo |
 | --- | :---: | :---: | :---: |
-| DQN | ✅ |  |  |
+| DQN | ✅ | ✅ |  |
 | Double DQN | ✅ |  |  |
 | PER-DQN | ✅ |  |  |
 | Duelling DQN |  |  |  |
 | A3C |  |  |  |
 | C51 |  |  |  |
 | Noisy DQN |  |  |  |
-| Rainbow | ✅ |  |  |
+| Rainbow | ✅ | ✅ |  |
 | R2D2 |  |  |  |
 | NGU |  |  |  |
 | Agnet57 |  |  |  |
