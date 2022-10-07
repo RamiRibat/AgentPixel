@@ -50,9 +50,9 @@ def main(env, num, seed, device, wb):
     num_envs = num
     env_domain = 'Atari' # configurations['environment']['domain']
 
-    group_name = f"Mac-AP-{env_domain}-{env_name}-X{num_envs}"
-    # group_name = f"V-AP-{env_domain}-{env_name}-X{num_envs}"
-    # group_name = f"Q-AP-{env_domain}-{env_name}-X{num_envs}"
+    # group_name = f"AP-Mac-{env_domain}-{env_name}-X{num_envs}"
+    group_name = f"AP-V-{env_domain}-{env_name}-X{num_envs}"
+    # group_name = f"AP-Q-{env_domain}-{env_name}-X{num_envs}"
     exp_prefix = f"{group_name}-{alg_name}-seed:{seed}"
 
     print('=' * 50)
@@ -72,13 +72,14 @@ def main(env, num, seed, device, wb):
 
     # envs = gym.vector.make(env_name, num_envs=num)
     if num == 0:
-        num = 1
+        num_envs = 1
         envs = gym.make("ALE/Pong-v5")
         # envs = gym.make("Pong-v4")
     else:
         envs = gym.vector.make(env_name, num_envs=num)
 
     o, info = envs.reset()
+    mask = np.ones([num_envs], dtype=bool)
     env_steps = 0
     LT = trange(1, LS+1, desc=env_name, position=0)
     # SPS = tqdm(desc='SPS', position=1, colour='PURPLE')
@@ -87,12 +88,20 @@ def main(env, num, seed, device, wb):
     CPUList, RAMList, SPSList = [], [], []
     logs = dict()
 
+    start_time_real = time.time()
+
     with CPU, RAM:
-        start_time_real = time.time()
         for t in LT:
+            if mask.sum()==0:
+                o, info = envs.reset()
+                mask = np.ones([num_envs], dtype=bool)
             a = envs.action_space.sample()
             o_next, r, terminated, truncated, info = envs.step(a)
-            env_steps += num
+            if num == 0:
+                terminated, truncated = np.array([terminated]), np.array([truncated])
+            mask[mask] = ~terminated[mask]
+            mask[mask] = ~truncated[mask]
+            env_steps += mask.sum()
             if t%500==0:
                 cur_time_real = time.time()
                 total_time_real = cur_time_real - start_time_real
@@ -100,7 +109,7 @@ def main(env, num, seed, device, wb):
                 # SPS.n = sps
                 # SPS.refresh()
                 SPSList.append(sps)
-                # print(f'Time={total_time_real} | env_steps={env_steps} | sps={sps}')
+                # print(f'env_steps={env_steps} | time={total_time_real} | sps={sps}')
 
                 CPU.n = psutil.cpu_percent()
                 CPU.refresh()
@@ -114,7 +123,7 @@ def main(env, num, seed, device, wb):
                 logs['time/total                          '] = total_time_real
                 logs['time/sps                            '] = sps
                 logs['time/sps-avg                        '] = np.mean(SPSList)
-                LT.set_postfix({'SPS': sps})
+                LT.set_postfix({'Steps': env_steps,'SPS': sps})
                 if wb: wandb.log(logs, step=env_steps)
             if env_steps >= LS: break
     envs.close()
