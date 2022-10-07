@@ -11,3 +11,4 @@ python test_atari.py -num 4 -wb
 python test_atari.py -num 8 -wb
 python test_atari.py -num 16 -wb
 python test_atari.py -num 32 -wb
+python test_atari.py -num 64 -wb
