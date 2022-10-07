@@ -68,7 +68,7 @@ def main(env, num, seed, device, wb):
             project=f'RL-WC'
         )
 
-    LS = int(1e5)
+    LS = int(1e6)
 
     # envs = gym.vector.make(env_name, num_envs=num)
     if num == 0:
