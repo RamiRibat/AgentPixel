@@ -1,4 +1,4 @@
-
+import psutil
 
 import gym
 
@@ -76,7 +76,8 @@ class MFRL:
         if terminated or truncated:
             Z, S, L, Traj = 0, 0, 0, Traj+1
             observation, info = self.learn_env.reset()
-        return observation, Z, L, Traj
+        cpu_percent = psutil.cpu_percent()
+        return observation, Z, L, Traj, cpu_percent
 
     def store_sarsd_in_buffer(
         self,

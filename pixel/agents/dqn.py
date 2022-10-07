@@ -3,6 +3,7 @@ import argparse
 import importlib
 import time, datetime
 import random
+import psutil
 
 from typing import Tuple, List, Dict
 from random import sample
@@ -42,8 +43,8 @@ class DQNAgent:
         return QNetwork(obs_dim, act_dim, net_configs, seed, device)
 
     def get_q(self, observation, action):
-        print('observation: ', observation.shape)
-        print('action: ', action.shape)
+        # print('observation: ', observation.shape)
+        # print('action: ', action.shape)
         return self.online_net(observation).gather(1, action)
 
     def get_q_target(self, observation):
@@ -104,45 +105,54 @@ class DQNLearner(MFRL):
 
         oldJq = 0
         Z, S, L, Traj = 0, 0, 0, 0
-        DQNLT = trange(1, LT+1, desc=alg)
+        DQNLT = trange(1, LT+1, desc=alg, position=0)
+        CPU = tqdm(total=100, desc='CPU %', position=1, colour='RED')
+        RAM = tqdm(total=100, desc='RAM %', position=2, colour='BLUE')
         observation, info = self.learn_env.reset()
         logs, ZList, LList, JQList = dict(), [0], [0], []
         termZ, termL = 0, 0
         # EPS = []
 
-        for t in DQNLT:
-            observation, Z, L, Traj_new = self.interact(observation, Z, L, t, Traj, epsilon)
-            if (Traj_new - Traj) > 0:
-                # termZ, termL = lastZ, lastL
-                ZList.append(lastZ), LList.append(lastL)
-            else:
-                lastZ, lastL = Z, L
-            Traj = Traj_new
+        with CPU, RAM:
+            for t in DQNLT:
+                observation, Z, L, Traj_new, cpu_percent = self.interact(observation, Z, L, t, Traj, epsilon)
+                if (Traj_new - Traj) > 0:
+                    # termZ, termL = lastZ, lastL
+                    ZList.append(lastZ), LList.append(lastL)
+                else:
+                    lastZ, lastL = Z, L
+                Traj = Traj_new
 
-            # if (t>iT):
-            if (t>iT) and ((t-1)%Lf == 0):
-                Jq = self.train_dqn(t)
-                oldJq = Jq
-                epsilon = self.update_epsilon(epsilon)
-            else:
-                Jq = oldJq
+                # if (t>iT):
+                if (t>iT) and ((t-1)%Lf == 0):
+                    Jq = self.train_dqn(t)
+                    oldJq = Jq
+                    epsilon = self.update_epsilon(epsilon)
+                else:
+                    Jq = oldJq
 
-            if ((t-1)%Vf == 0):
-                VZ, VS, VL = self.evaluate()
-                logs['data/env_buffer_size                '] = self.buffer.size
-                logs['training/dqn/Jq                     '] = Jq
-                logs['training/dqn/epsilon                '] = epsilon
-                logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
-                logs['learning/real/rollout_return_std    '] = np.std(ZList)
-                logs['learning/real/rollout_length        '] = np.mean(LList)
-                # logs['learning/real/rollout_return_mean   '] = termZ
-                # logs['learning/real/rollout_return_std    '] = termZ
-                # logs['learning/real/rollout_length        '] = termL
-                logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
-                logs['evaluation/episodic_return_std      '] = np.std(VZ)
-                logs['evaluation/episodic_length_mean     '] = np.mean(VL)
-                DQNLT.set_postfix({'Traj': Traj, 'learnZ': np.mean(ZList), 'evalZ': np.mean(VZ)})
-                if self.WandB: wandb.log(logs, step=t)
+                if ((t-1)%Vf == 0):
+                    VZ, VS, VL = self.evaluate()
+                    logs['data/env_buffer_size                '] = self.buffer.size
+                    logs['training/dqn/Jq                     '] = Jq
+                    logs['training/dqn/epsilon                '] = epsilon
+                    logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
+                    logs['learning/real/rollout_return_std    '] = np.std(ZList)
+                    logs['learning/real/rollout_length        '] = np.mean(LList)
+                    # logs['learning/real/rollout_return_mean   '] = termZ
+                    # logs['learning/real/rollout_return_std    '] = termZ
+                    # logs['learning/real/rollout_length        '] = termL
+                    logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
+                    logs['evaluation/episodic_return_std      '] = np.std(VZ)
+                    logs['evaluation/episodic_length_mean     '] = np.mean(VL)
+                    DQNLT.set_postfix({'Traj': Traj, 'learnZ': np.mean(ZList), 'evalZ': np.mean(VZ)})
+                    if self.WandB: wandb.log(logs, step=t)
+
+                CPU.n = cpu_percent
+                CPU.refresh()
+                RAM.n=psutil.virtual_memory().percent
+                RAM.refresh()
+
 
         VZ, VS, VL = self.evaluate()
         logs['data/env_buffer_size                '] = self.buffer.size
