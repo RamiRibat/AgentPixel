@@ -24,7 +24,6 @@ from gym.vector.sync_vector_env import SyncVectorEnv
 
 class GymMaker:
     def __init__(self, configs, eval=False, device=None, seed=0):
-        print('Initialize GymMaker')
         self.eval = eval
         self._device_ = device
         self.seed = seed
@@ -62,7 +61,7 @@ class GymMaker:
                 return env()
             else:
                 env_fns = [ create_env() for e in range(configs['n-envs']) ]
-                return AsyncVectorEnv(env_fns) if configs.asynchronous else SyncVectorEnv(env_fns)
+                return AsyncVectorEnv(env_fns) if configs['asynchronous'] else SyncVectorEnv(env_fns)
 
     def _seed_env(self):
         self.env.action_space.seed(self.seed)
@@ -104,40 +103,43 @@ class GymMaker:
 #     'max-frames': int(108e3), # per episode
 #     'pre-process': ['AtariPreprocessing'],
 # }
-#
-#
-#
+
+
+
 # if __name__ == '__main__':
 #     parser = argparse.ArgumentParser()
 #     for k, v in environment.items():
 #         parser.add_argument(f"--{k}", type=type(v), default=v)
-#     configs = parser.parse_args()
+#     args = parser.parse_args()
 #
-#
-#     env = GymMaker(configs)
-#
-#     observation, info = env.reset()
-#     # envs.render()
-#     mask = np.ones([max(1, configs.n_envs)], dtype=bool)
-#     total_steps = 0
-#
-#     LS = int(1e4)
-#     LT = trange(1, LS+1, desc=configs.name, position=0)
-#
-#     for t in LT:
-#         if mask.sum()==0:
-#             o, info = env.reset()
-#             mask = np.ones([max(1, configs.n_envs)], dtype=bool)
-#             # envs.render()
-#         action = env.action_space.sample()
-#         observation_next, reward, terminated, truncated, info = env.step(action)
-#         # envs.render()
-#         # time.sleep(0.05)
-#         if configs.n_envs == 0:
-#             terminated, truncated = np.array([terminated]), np.array([truncated])
-#         mask[mask] = ~terminated[mask]
-#         mask[mask] = ~truncated[mask]
-#         total_steps += mask.sum()
-#         if total_steps >= LS: break
-#     print('observation: ', observation.shape)
-#     env.close()
+#     print('n-envs = ', args.n_envs)
+
+    # env_configs = environment
+    #
+    # env = GymMaker(env_configs)
+    #
+    # observation, info = env.reset()
+    # # envs.render()
+    # mask = np.ones([max(1, configs['n-envs'])], dtype=bool)
+    # total_steps = 0
+    #
+    # LS = int(1e4)
+    # LT = trange(1, LS+1, desc=configs['name'], position=0)
+    #
+    # for t in LT:
+    #     if mask.sum()==0:
+    #         o, info = env.reset()
+    #         mask = np.ones([max(1, configs['n-envs'])], dtype=bool)
+    #         # envs.render()
+    #     action = env.action_space.sample()
+    #     observation_next, reward, terminated, truncated, info = env.step(action)
+    #     # envs.render()
+    #     # time.sleep(0.05)
+    #     if configs['n-envs'] == 0:
+    #         terminated, truncated = np.array([terminated]), np.array([truncated])
+    #     mask[mask] = ~terminated[mask]
+    #     mask[mask] = ~truncated[mask]
+    #     total_steps += mask.sum()
+    #     if total_steps >= LS: break
+    # print('observation: ', observation.shape)
+    # env.close()
