@@ -98,7 +98,7 @@ class RainbowLearner(MFRL):
 
         oldJq = 0
         Z, S, L, Traj = 0, 0, 0, 0
-        RainbowLT = trange(1, LT+1, desc=f'{alg} | seed={self.seed})
+        RainbowLT = trange(1, LT+1, desc=f'{alg} | seed={self.seed}')
         observation, info = self.learn_env.reset()
         logs, ZList, LList, JQList = dict(), [0], [0], []
 
