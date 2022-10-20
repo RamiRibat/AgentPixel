@@ -46,7 +46,8 @@ def work(processes_list):
 
 def process_work(seeds, processes_list):
     pool = Pool(processes=len(seeds)+1)
-    pool.map(work, processes_list)
+    # pool.map(work, processes_list)
+    pool.map_async(work, processes_list)
 
 
 

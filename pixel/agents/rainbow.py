@@ -321,4 +321,4 @@ if __name__ == "__main__":
 
     main(configurations, seed, device, wb)
 
-    kill_process('monitor.py')
+    # kill_process('monitor.py')
