@@ -30,11 +30,17 @@ class MFRL:
             env.observation_space.seed(self.seed)
             env.reset(seed=self.seed)
         env_name = self.configs['environment']['name']
-        num_envs = self.configs['environment']['n-envs']
+        vectorized = self.configs['environment']['vectorized']
+
         evaluate = self.configs['evaluation']['evaluate']
+
+        if vectorized:
+            num_envs = self.configs['environment']['n-envs']
+            envs = make_env(id=env_name, num_envs=num_envs)
         # self.learn_env = gym.make(env_name)
         self.learn_envs = gym.vector.make(env_name, num_envs=num_envs)
         seed_env(self.learn_envs)
+
         if evaluate:
             # self.eval_env = gym.make(env_name)
             self.eval_env = gym.make(env_name)

@@ -1,8 +1,10 @@
 import os, subprocess, sys
-import argparse
-import importlib
 import time, datetime
+import importlib
+import argparse
 import random
+import psutil
+import json
 
 from typing import Tuple, List, Dict
 from random import sample
@@ -18,6 +20,7 @@ from torch.nn.utils import clip_grad_norm_
 
 from pixel.agents._mfrl import MFRL
 from pixel.networks.value_functions import NDCQNetwork
+from pixel.utils.tools import kill_process
 
 
 class RainbowAgent:
@@ -37,13 +40,15 @@ class RainbowAgent:
 
     def _set_q(self):
         obs_dim, act_dim = self.obs_dim, self.act_dim
-        atom_size = self.configs['algorithm']['hyper-parameters']['atom-size']
-        v_min = self.configs['algorithm']['hyper-parameters']['v-min']
-        v_max = self.configs['algorithm']['hyper-parameters']['v-max']
-        net_configs = self.configs['critic']['network']
+        net_cfgs = self.configs['critic']['network']
+        hyper_para  = self.configs['algorithm']['hyper-parameters']
+        # history = self.configs['algorithm']['hyper-parameters']['history']
+        # atom_size = self.configs['algorithm']['hyper-parameters']['atom-size']
+        # v_min = self.configs['algorithm']['hyper-parameters']['v-min']
+        # v_max = self.configs['algorithm']['hyper-parameters']['v-max']
+        # net_configs = self.configs['critic']['network']
         seed, device = self.seed, self._device_
-        # return QNetwork(obs_dim, act_dim, net_configs, seed, device)
-        return NDCQNetwork(obs_dim, act_dim, atom_size, v_min, v_max, net_configs, seed, device)
+        return NDCQNetwork(obs_dim, act_dim, net_cfgs, hyper_para, seed, device)
 
     def get_q(self, observation, action):
         return self.online_net(observation).gather(1, action)
@@ -68,8 +73,8 @@ class RainbowLearner(MFRL):
     """
     Rainbow [DeepMind (Hessel et al.); 2017]
     """
-    def __init__(self, exp_prefix, configs, seed, device, wb):
-        super(RainbowLearner, self).__init__(exp_prefix, configs, seed, device)
+    def __init__(self, configs, seed, device, wb):
+        super(RainbowLearner, self).__init__(configs, seed, device)
         print('Initialize Rainbow Learner')
         self.configs = configs
         self.seed = seed
@@ -247,6 +252,7 @@ class RainbowLearner(MFRL):
 
     def update_beta(self, beta, t, LT):
         fraction = min(t/LT, 1.0)
+        import json
         beta = beta + fraction * (1.0 - beta)
         return beta
 
@@ -257,35 +263,31 @@ class RainbowLearner(MFRL):
 
 
 
-def main(exp_prefix, config, seed, device, wb):
+def main(configurations, seed, device, wb):
 
-    print('Start Rainbow experiment...')
+    print('Start Rainbow experiment\n')
+    # print('Configurations:\n', json.dumps(configurations, indent=4, sort_keys=False))
     print('\n')
 
-    configs = config.configurations
+    algorithm = configurations['algorithm']['name']
+    environment = configurations['environment']['name']
+    domain = configurations['environment']['domain']
+    n_envs = configurations['environment']['n-envs']
 
-    if seed:
-        random.seed(seed), np.random.seed(seed), T.manual_seed(seed)
-
-    alg_name = configs['algorithm']['name']
-    env_name = configs['environment']['name']
-    env_domain = configs['environment']['domain']
-
-    group_name = f"{env_name}-{alg_name}" # H < -2.7
+    group_name = f"{algorithm}-{environment}-X{n_envs}" # H < -2.7
     exp_prefix = f"seed:{seed}"
-    # print('group: ', group_name)
 
     if wb:
         wandb.init(
             group=group_name,
             name=exp_prefix,
-            project=f'VECTOR',
+            project=f'ATARI',
             config=configs
         )
 
-    rainbow_learner = RainbowLearner(exp_prefix, configs, seed, device, wb)
+    rainbow_learner = RainbowLearner(configurations, seed, device, wb)
 
-    rainbow_learner.learn()
+    # rainbow_learner.learn()
 
     print('\n')
     print('... End Rainbow experiment')
@@ -293,25 +295,38 @@ def main(exp_prefix, config, seed, device, wb):
 
 
 if __name__ == "__main__":
-
-    import argparse
-
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-exp_prefix', type=str)
-    parser.add_argument('-cfg', type=str)
-    parser.add_argument('-seed', type=str)
-    parser.add_argument('-device', type=str)
-    parser.add_argument('-wb', type=str)
+    parser.add_argument('--configs', type=str)
+    parser.add_argument('--env', type=str, default='ALE/Pong-v5')
+    parser.add_argument('--n-envs', type=int, default=0)
+    parser.add_argument('--seed', type=int)
+    parser.add_argument('--device', type=str)
+    parser.add_argument('--wb', type=str)
 
     args = parser.parse_args()
 
-    exp_prefix = args.exp_prefix
-    # sys.path.append(f"{os.getcwd()}/configs")
-    sys.path.append(f"pixel/configs")
-    config = importlib.import_module(args.cfg)
+    sys.path.append("pixel/configs")
+
+    configs = importlib.import_module(args.configs)
     seed = int(args.seed)
     device = args.device
     wb = eval(args.wb)
 
-    main(exp_prefix, config, seed, device, wb)
+    if seed:
+        random.seed(seed)
+        np.random.seed(seed)
+        T.manual_seed(seed)
+
+    configurations = configs.configurations
+    configurations['environment']['name'] = args.env
+    configurations['environment']['n-envs'] = args.n_envs
+
+    LS = int(1e3)
+    LT = trange(1, LS+1, desc=f'seed={seed}', position=0)
+    for t in LT:
+        time.sleep(0.005)
+
+    # main(configurations, seed, device, wb)
+
+    kill_process('monitor.py')

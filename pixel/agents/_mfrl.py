@@ -1,9 +1,12 @@
 import psutil
+import argparse
 
+import numpy as np
 import gym
 
-from pixel.data.buffers import ReplayBuffer, PERBuffer, NSRBuffer
-
+from pixel.envs.make import GymMaker
+from pixel.data.memory import PixelPER
+# from pixel.data.buffers import ReplayBuffer, PERBuffer, NSRBuffer
 
 
 
@@ -13,9 +16,8 @@ class MFRL:
     """
     Model-Free Reinforcement Learning
     """
-    def __init__(self, exp_prefix, configs, seed, device):
-        print('init MFRL!')
-        self.exp_prefix = exp_prefix
+    def __init__(self, configs, seed, device):
+        print('Initialize MFRL!')
         self.configs = configs
         self.seed = seed
         self._device_ = device
@@ -25,27 +27,23 @@ class MFRL:
         self._set_buffer()
 
     def _set_env(self):
-        def seed_env(env):
-            # env.seed(self.seed)
-            env.action_space.seed(self.seed)
-            env.observation_space.seed(self.seed)
-            env.reset(seed=self.seed)
-        env_name = self.configs['environment']['name']
-        evaluate = self.configs['evaluation']['evaluate']
-        self.learn_env = gym.make(env_name)
-        seed_env(self.learn_env)
-        if evaluate:
-            self.eval_env = gym.make(env_name)
-            seed_env(self.eval_env)
-        self.obs_dim = self.learn_env.observation_space.shape[0] # Continous S
-        self.act_dim = self.learn_env.action_space.n # Discrete A
-        self.env_horizon = self.learn_env.spec.max_episode_steps
+        env_cfgs = self.configs['environment']
+
+        self.learn_env = GymMaker(env_cfgs)
+        if self.configs['evaluation']['evaluate']:
+            self.eval_env = GymMaker(env_cfgs, eval=True)
+
+        self.obs_dim = self.learn_env.observation_dim
+        self.act_dim = self.learn_env.action_dim
+        # self.max_frames = self.learn_env.spec.max_frames_per_episode
 
     def _set_buffer(self):
         obs_dim, act_dim = self.obs_dim, self.act_dim
-        max_size = self.configs['data']['buffer_size']
-        batch_size = self.configs['data']['batch_size']
-        buffer_type = self.configs['data']['buffer_type']
+        buffer_cfgs = self.configs['data']
+        # buffer_size = self.configs['data']['buffer-size']
+        # batch_size = self.configs['data']['batch-size']
+        buffer_type = self.configs['data']['buffer-type']
+        hyper_para = self.configs['algorithm']['hyper-parameters']
         if buffer_type == 'simple':
             self.buffer = ReplayBuffer(obs_dim, max_size, batch_size)
         elif buffer_type == 'per':
@@ -55,21 +53,30 @@ class MFRL:
             n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
             self.buffer = NSRBuffer(obs_dim, max_size, batch_size, n_steps=1)
             self.buffer_n = NSRBuffer(obs_dim, max_size, batch_size, n_steps=n_steps)
-        elif buffer_type == 'per+nSteps':
+        elif buffer_type == 'per+nSteps': # Rainbow
             alpha = self.configs['algorithm']['hyper-parameters']['alpha']
             n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
             self.buffer_per = PERBuffer(obs_dim, max_size, batch_size, alpha)
             self.buffer_n = NSRBuffer(obs_dim, max_size, batch_size, n_steps=n_steps)
+        elif buffer_type == 'pixel-simple': # DQN
+            buffer_info = self.configs['data']
+            buffer_info.update(self.configs['algorithm']['hyper-parameters'])
+            parser = argparse.ArgumentParser()
+            for k, v in buffer_info.items():
+                parser.add_argument(f"--{k}", type=type(v), default=v)
+            buffer_cfgs = parser.parse_args()
+            self.buffer = PixelER(buffer_cfgs)
+        elif buffer_type == 'pixel-per': # Rainbow
+            self.buffer = PixelPER(buffer_cfgs, hyper_para)
 
     def interact(self, observation, Z, L, t, Traj, epsilon=0.001):
         xT = self.configs['learning']['expl_steps']
         if t > xT:
-            # action = self.agent.get_eps_greedy_action(observation, epsilon=epsilon)
             action = self.agent.get_action(observation, epsilon=epsilon)
-        # else:
-        #     action = self.learn_env.action_space.sample()
+        else:
+            action = self.learn_env.action_space.sample()
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
-        self.store_sarsd_in_buffer(observation, action, reward, observation_next, terminated)
+        self.store_sard_in_buffer(observation, action, reward, terminated)
         observation = observation_next
         Z += reward
         L += 1
@@ -79,12 +86,11 @@ class MFRL:
         cpu_percent = psutil.cpu_percent()
         return observation, Z, L, Traj, cpu_percent
 
-    def store_sarsd_in_buffer(
+    def store_sard_in_buffer(
         self,
         observation,
         action,
         reward,
-        observation_next,
         terminated):
 
         buffer_type = self.configs['data']['buffer_type']
@@ -116,6 +122,8 @@ class MFRL:
                                       reward,
                                       observation_next,
                                       terminated)
+        elif buffer_type == 'pixel-per':
+            self.buffer.store_sard(observation, action, reward, terminated)
 
     def evaluate(self):
         evaluate = self.configs['evaluation']['evaluate']
