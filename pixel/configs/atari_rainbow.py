@@ -3,7 +3,7 @@
 configurations = {
 
     'comments': {
-        'Rami': None,
+        'Rami Ahmed*': None,
     },
 
     'experiment': {
@@ -14,14 +14,11 @@ configurations = {
     },
 
     'environment': {
-        # 'name': 'ALE/Asterix-v5',
-        # 'name': 'ALE/Boxing-v5',
-        # 'name': 'ALE/Breakout-v5',
         'name': 'ALE/Pong-v5',
         'domain': 'atari',
         'state': 'pixel',
         'action': 'discrete',
-        'n-envs': 0,
+        'n-envs': [0],
         'asynchronous': True,
         'n-stacks': 4,
         'frame-skip': 4,
@@ -54,8 +51,8 @@ configurations = {
         # 'on-policy': False,
         # 'model-based': False,
         'hyper-parameters': {
-            'hist-len': 4,
-            'n_steps': 3,
+            'history': 4,
+            'n-steps': 3,
             'gamma': 0.99,
             # 'alpha': 0.2,
             'omega': 0.5,
@@ -76,7 +73,7 @@ configurations = {
         'type': 'Duelling Value-function',
         'network': {
             'encoder': {
-                'pte-train': False,
+                'pre-train': False,
                 'arch': ['canonical', 3136],
                 # 'arch': ['data-efficient', 576],
                 'activation': 'ReLU',
@@ -99,8 +96,9 @@ configurations = {
     },
 
     'data': {
-        'buffer-type': 'per+nSteps',
-        'buffer-size': int(1e6),
+        # 'buffer-type': 'per+nSteps',
+        'buffer-type': 'pixel-per',
+        'capacity': int(1e6),
         'batch-size': 32,
     }
 

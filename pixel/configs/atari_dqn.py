@@ -33,7 +33,7 @@ configurations = {
 
     'learning': {
         'total-steps': int(50e6), # 50e6 steps X4 = 200e6 frames
-        'init-steps': int(2e4),
+        'init-steps': int(1e3),
         'expl-steps': int(0),
         'learn-freq': 4,
         'grad-steps': 1,
@@ -54,14 +54,14 @@ configurations = {
         # 'on-policy': False,
         # 'model-based': False,
         'hyper-parameters': {
-            'hist-len': 4,
+            'history': 4,
             'n-steps': 1,
             'gamma': 0.99,
             'init-epsilon': 1.0,
             'max-epsilon': 1.0,
             'min-epsilon': 0.1,
-            'epsilon-decay': 1/2000,
-            'target-update-frequency': 100,
+            'epsilon-decay': 1/1000,
+            'target-update-frequency': 200,
         }
     },
 
@@ -89,7 +89,7 @@ configurations = {
                 'type': 'Adam',
                 'lr': 65e-5,
                 'eps': 1.5e-4,
-                # 'norm-clip': 10,
+                'norm-clip': 5,
             },
         }
     },
