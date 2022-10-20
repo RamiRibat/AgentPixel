@@ -29,8 +29,10 @@ configurations = {
     },
 
     'learning': {
-        'total-steps': int(50e6), # 50e6 steps X4 = 200e6 frames
-        'init-steps': int(2e4),
+        'total-steps': int(50e2), # 50e6 steps X4 = 200e6 frames
+        'init-steps': int(20e1),
+        # 'total-steps': int(50e6), # 50e6 steps X4 = 200e6 frames
+        # 'init-steps': int(20e3),
         'expl-steps': int(0),
         'learn-freq': 4,
         'grad-steps': 1,
@@ -40,8 +42,10 @@ configurations = {
 
     'evaluation': {
         'evaluate': True,
-        'eval-freq': int(1e5),
-        'episodes': 10,
+        'eval-freq': int(5e2),
+        'episodes': 1,
+        # 'eval-freq': int(1e5),
+        # 'episodes': 10,
         'render': False,
     },
 

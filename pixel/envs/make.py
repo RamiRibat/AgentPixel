@@ -24,7 +24,7 @@ from gym.vector.sync_vector_env import SyncVectorEnv
 
 class GymMaker:
     def __init__(self, configs, eval=False, device=None, seed=0):
-        print('Initialize GymMaker')
+        # print('Initialize GymMaker')
         self.eval = eval
         self._device_ = device
         self.seed = seed
@@ -87,23 +87,23 @@ class GymMaker:
 
 
 
-# environment = {
-#     # 'name': 'ALE/Asterix-v5',
-#     # 'name': 'ALE/Boxing-v5',
-#     # 'name': 'ALE/Breakout-v5',
-#     'name': 'ALE/Pong-v5',
-#     'domain': 'atari',
-#     'state': 'pixel',
-#     'action': 'discrete',
-#     'n-envs': 0,
-#     'asynchronous': True,
-#     'n-stacks': 4,
-#     'frame-skip': 4,
-#     'reward-clip': False,
-#     'max-steps': int(27e3), # per episode
-#     'max-frames': int(108e3), # per episode
-#     'pre-process': ['AtariPreprocessing'],
-# }
+environment = {
+    # 'name': 'ALE/Asterix-v5',
+    # 'name': 'ALE/Boxing-v5',
+    # 'name': 'ALE/Breakout-v5',
+    'name': 'ALE/Pong-v5',
+    'domain': 'atari',
+    'state': 'pixel',
+    'action': 'discrete',
+    'n-envs': 0,
+    'asynchronous': True,
+    'n-stacks': 4,
+    'frame-skip': 4,
+    'reward-clip': False,
+    'max-steps': int(27e3), # per episode
+    'max-frames': int(108e3), # per episode
+    'pre-process': ['AtariPreprocessing'],
+}
 #
 #
 #

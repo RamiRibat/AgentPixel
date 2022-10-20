@@ -10,7 +10,7 @@ class NoisyLinear(nn.Module):
         super(NoisyLinear, self).__init__()
         self.in_features, self.out_features = in_features, out_features
         self.std_init = std_init
-        self.weight_mu = nn.Parameter(T.empty(out_features, in_features))
+        self.weight_mu = nn.Parameter(T.empty(out_features, in_features)) # reveresed
         self.weight_sigma = nn.Parameter(T.empty(out_features, in_features))
         self.register_buffer('weight_epsilon', T.empty(out_features, in_features))
         self.bias_mu = nn.Parameter(T.empty(out_features))
@@ -70,12 +70,12 @@ class NoisyNetwork(nn.Module):
     """
     Reference: Noisy Networks for Exploration (DeepMind; ICLR 2018)
     """
-    def __init__(self, in_dim: int, out_dim: int, net_configs: Dict):
+    def __init__(self, in_dim: int, out_dim: int, configs: Dict):
         super(NoisyNetwork, self).__init__()
         self.net = nn.Sequential(
-            NoisyLinear(in_dim, 128),
+            NoisyLinear(in_dim, configs['arch'][1]),
             nn.ReLU(),
-            NoisyLinear(128, out_dim)
+            NoisyLinear(configs['arch'][1], out_dim)
         )
 
     def forward(self, x: T.Tensor) -> T.Tensor:

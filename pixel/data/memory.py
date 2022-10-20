@@ -14,15 +14,6 @@ sard_dtype = np.dtype([
     ('terminal', np.bool_),
 ])
 
-# blank_sard_numerical = (0, np.zeros((dim,1)), 0, 0.0, False)
-# sard_dtype_numerical = np.dtype([
-#     ('t', np.int32),
-#     ('observation', np.float32),
-#     ('action', np.int32),
-#     ('reward', np.float32),
-#     ('terminal', np.bool_),
-# ])
-
 
 class SegmentTree: # Done
     def __init__(self, capacity):
@@ -35,7 +26,7 @@ class SegmentTree: # Done
         return self.sum_tree[0]
 
     def get(self, data_idx):
-        return self.data[data_idx % self.capacity]
+        return self.data[data_idx % self.tree_capacity]
 
     def find(self, prios):
         idxs = self._retrieve(np.zeros(prios.shape, dtype=np.int32), prios)
@@ -45,7 +36,7 @@ class SegmentTree: # Done
     def append(self, sard, prio) -> None:
         self.data[self.idx] = sard
         self._update_prio(self.idx+self.tree_start, prio)
-        self.idx = (self.idx+1)%self.capacity # FIFO
+        self.idx = (self.idx+1)%self.tree_capacity # FIFO
         self.full = self.full or self.idx==0
 
     def _retrieve(self, idxs, prios):
@@ -92,16 +83,7 @@ class PixelPER: # Done
         self,
         configs,
         hyper_para,
-        # state: str,
-        # action: str,
-        # capacity: int,
-        # batch_size: int = 32,
-        # history: int = 4,
-        # n_steps: int = 3,
-        # gamma: float = 0.99, # discount factor
-        # omega: float = 0.5, # prio-exponent
-        # beta: float = 0.4, # prio-weight
-        seed = 0, device = 'cpu'): # Done # Done
+        seed = 0, device = 'cpu'):
         self.seed, self._device_ = seed, device
         self.capacity, self.batch_size = configs['capacity'], configs['batch-size']
         self.history, self.n_steps = hyper_para['history'], hyper_para['n-steps']
@@ -109,10 +91,11 @@ class PixelPER: # Done
         self.t, self.transitions = 0, SegmentTree(self.capacity)
         self.gamma_n = T.tensor([self.gamma**i for i in range(self.n_steps)], dtype=T.float32, device=self._device_)
 
+    def _size(self):
+        return self.capacity if self.transitions.full else self.transitions.idx
+
     def append_sard(self, s, a, r, d) -> None: # Done
-        # if self.state == 'pixel':
-        s = s[-1].mul(255).to(dtype=np.unit8, device=T.device('cpu'))
-        self.transitions.append((self.t, s, a, r, d), self.transitions.max)
+        self.transitions.append((self.t, s[-1], a, r, d), self.transitions.max)
         self.t = 0 if d else self.t+1
 
     def update_prios(self, idxs, prios) -> None: # Done
@@ -123,7 +106,7 @@ class PixelPER: # Done
         total_prios = self.transitions.total()
         segment_batch = self._sample_batch_from_segments(batch_size, total_prios)
         probs = segment_batch['probs'] / total_prios
-        capacity = self.capacity if self.full else self.transitions.idx
+        capacity = self.capacity if self.transitions.full else self.transitions.idx
         weights = (capacity*probs) ** -self.beta
         weights_normz = T.tensor(weights/weights.max(), dtype=np.float32, device=self._device_)
         batch = dict(tree_idxs=segment_batch['tree_idxs'],
@@ -147,8 +130,8 @@ class PixelPER: # Done
             and np.all(probs != 0):
                 valid = True
         transitions = self._get_transitions(idxs)
-        observations = T.tensor(transitions['observation'][:, :self.history], dtype=T.float32, device=self._device_).div_(255)
-        observations_next = T.tensor(transitions['observation'][:, self.n_steps:self.n_steps+self.history], dtype=np.float32, device=self._device_).div_(255)
+        observations = T.tensor(transitions['observation'][:, :self.history], dtype=T.float32, device=self._device_)#.div_(255)
+        observations_next = T.tensor(transitions['observation'][:, self.n_steps:self.n_steps+self.history], dtype=np.float32, device=self._device_)#.div_(255)
         actions = T.tensor(np.copy(transitions['action'][:, self.history-1]), dtype=T.int64, device=self._device_)
         rewards = T.tensor(np.copy(transitions['reward'][:, self.history-1:-1]), dtype=T.float32, device=self._device_)
         returns = T.matmul(rewards, self.gamma_n)

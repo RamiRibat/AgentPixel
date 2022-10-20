@@ -17,7 +17,7 @@ class MFRL:
     Model-Free Reinforcement Learning
     """
     def __init__(self, configs, seed, device):
-        print('Initialize MFRL!')
+        # print('Initialize MFRL!')
         self.configs = configs
         self.seed = seed
         self._device_ = device
@@ -59,41 +59,34 @@ class MFRL:
             self.buffer_per = PERBuffer(obs_dim, max_size, batch_size, alpha)
             self.buffer_n = NSRBuffer(obs_dim, max_size, batch_size, n_steps=n_steps)
         elif buffer_type == 'pixel-simple': # DQN
-            buffer_info = self.configs['data']
-            buffer_info.update(self.configs['algorithm']['hyper-parameters'])
-            parser = argparse.ArgumentParser()
-            for k, v in buffer_info.items():
-                parser.add_argument(f"--{k}", type=type(v), default=v)
-            buffer_cfgs = parser.parse_args()
-            self.buffer = PixelER(buffer_cfgs)
+            self.buffer = PixelER(buffer_cfgs, hyper_para, device=self._device_)
         elif buffer_type == 'pixel-per': # Rainbow
-            self.buffer = PixelPER(buffer_cfgs, hyper_para)
+            self.buffer = PixelPER(buffer_cfgs, hyper_para, device=self._device_)
 
     def interact(self, observation, Z, L, t, Traj, epsilon=0.001):
-        xT = self.configs['learning']['expl_steps']
+        xT = self.configs['learning']['expl-steps']
         if t > xT:
             action = self.agent.get_action(observation, epsilon=epsilon)
         else:
             action = self.learn_env.action_space.sample()
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
-        self.store_sard_in_buffer(observation, action, reward, terminated)
+        self.append_sard_in_buffer(observation, action, reward, terminated)
         observation = observation_next
         Z += reward
         L += 1
         if terminated or truncated:
             Z, S, L, Traj = 0, 0, 0, Traj+1
             observation, info = self.learn_env.reset()
-        cpu_percent = psutil.cpu_percent()
-        return observation, Z, L, Traj, cpu_percent
+        return observation, Z, L, Traj
 
-    def store_sard_in_buffer(
+    def append_sard_in_buffer(
         self,
         observation,
         action,
         reward,
         terminated):
 
-        buffer_type = self.configs['data']['buffer_type']
+        buffer_type = self.configs['data']['buffer-type']
         if (buffer_type == 'simple') or (buffer_type == 'per'):
             self.buffer.store_sarsd(observation,
                                     action,
@@ -123,7 +116,7 @@ class MFRL:
                                       observation_next,
                                       terminated)
         elif buffer_type == 'pixel-per':
-            self.buffer.store_sard(observation, action, reward, terminated)
+            self.buffer.append_sard(observation, action, reward, terminated)
 
     def evaluate(self):
         evaluate = self.configs['evaluation']['evaluate']

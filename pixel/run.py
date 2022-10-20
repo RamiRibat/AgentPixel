@@ -40,33 +40,13 @@ def experiment_grid(args):
 
 
 
-def work(vars):
-    agent, configs, info, seed, device, wb = vars
-    return subprocess.run([
-                'python', agent,
-                '--configs', str(configs),
-                '--env', info['env'],
-                '--n-env', str(info['n']),
-                '--seed', str(seed),
-                '--device', device,
-                '--wb', str(wb)
-                ])
 
-def process_work(seeds, works_vars):
-    print('work: starting')
-    pool = Pool(processes=len(seeds))
-    pool.map(work, works_vars)
-    print('work: finishing')
-
-
-def work2(processes_list):
+def work(processes_list):
     return subprocess.run(processes_list)
 
-def process_work2(seeds, processes_list):
-    print('work: starting')
+def process_work(seeds, processes_list):
     pool = Pool(processes=len(seeds)+1)
-    pool.map(work2, processes_list)
-    print('work: finishing')
+    pool.map(work, processes_list)
 
 
 
@@ -81,17 +61,11 @@ def main(external_args):
         wb = external_args.wb
         print('=' * 50)
         print(f'Start of an RL experiment')
-        # for seed in external_args.seed:
         print(f"\t Algorithm:   {info['alg']}")
         print(f"\t Environment: {info['env']} X {info['n']}")
         print(f"\t Random seed(s): {seeds}")
         print('=' * 50)
         works_vars = [ [agent, configs, info, seed, device, wb] for seed in seeds]
-        # print('works_vars: ', works_vars)
-
-        # process_work(seeds, works_vars)
-
-        # works_vars = [ [agent, configs, info, seed, device, wb] for seed in seeds]
 
         work_processes = [ [
             'python', agent,
@@ -102,28 +76,10 @@ def main(external_args):
             '--device', device,
             '--wb', str(wb)
             ] for seed in seeds ]
-
         monitor_process = ['python',  os.getcwd() + '/pixel/utils/monitor.py']
-
         work_processes.append(monitor_process)
-        # subprocess.run(monitor_process)
 
-        process_work2(seeds, work_processes)
-
-
-
-
-        # p2 = Process(target=process_monitor())
-        # p1 = Process(target=process_work(seeds, works_vars))
-
-        # p1.start()
-        # p2.start()
-        # # p1.start()
-        #
-        # p1.join()
-        # p2.join()
-        # # p1.join()
-
+        process_work(seeds, work_processes)
 
             # subprocess.run(['python', agent,
             #                 '--env', info['env'],

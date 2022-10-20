@@ -42,11 +42,6 @@ class RainbowAgent:
         obs_dim, act_dim = self.obs_dim, self.act_dim
         net_cfgs = self.configs['critic']['network']
         hyper_para  = self.configs['algorithm']['hyper-parameters']
-        # history = self.configs['algorithm']['hyper-parameters']['history']
-        # atom_size = self.configs['algorithm']['hyper-parameters']['atom-size']
-        # v_min = self.configs['algorithm']['hyper-parameters']['v-min']
-        # v_max = self.configs['algorithm']['hyper-parameters']['v-max']
-        # net_configs = self.configs['critic']['network']
         seed, device = self.seed, self._device_
         return NDCQNetwork(obs_dim, act_dim, net_cfgs, hyper_para, seed, device)
 
@@ -59,7 +54,7 @@ class RainbowAgent:
 
     def get_greedy_action(self, observation, evaluation=False): # Select Action(s) based on eps_greedy
         with T.no_grad():
-            return self.online_net(T.FloatTensor(observation).to(self._device_)).argmax().cpu().numpy()
+            return self.online_net(T.tensor(np.array(observation), dtype=T.float32)).argmax().cpu().numpy()
 
     def get_action(self, observation, epsilon=None, evaluation=False):
         return self.get_greedy_action(observation, evaluation)
@@ -93,11 +88,11 @@ class RainbowLearner(MFRL):
         self.agent = RainbowAgent(self.obs_dim, self.act_dim, self.configs, self.seed, self._device_)
 
     def learn(self):
-        LT = self.configs['learning']['steps']
-        iT = self.configs['learning']['init_steps']
-        xT = self.configs['learning']['expl_steps']
-        Lf = self.configs['learning']['frequency']
-        Vf = self.configs['evaluation']['frequency']
+        LT = self.configs['learning']['total-steps']
+        iT = self.configs['learning']['init-steps']
+        xT = self.configs['learning']['expl-steps']
+        Lf = self.configs['learning']['learn-freq']
+        Vf = self.configs['evaluation']['eval-freq']
         alg = self.configs['algorithm']['name']
         beta = self.configs['algorithm']['hyper-parameters']['beta']
 
@@ -106,7 +101,6 @@ class RainbowLearner(MFRL):
         RainbowLT = trange(1, LT+1, desc=alg)
         observation, info = self.learn_env.reset()
         logs, ZList, LList, JQList = dict(), [0], [0], []
-        # EPS = []
 
         for t in RainbowLT:
             observation, Z, L, Traj_new = self.interact(observation, Z, L, t, Traj)
@@ -116,20 +110,20 @@ class RainbowLearner(MFRL):
                 lastZ, lastL = Z, L
             Traj = Traj_new
 
-            beta = self.update_beta(beta, t, LT)
+            # beta = self.update_beta(beta, t, LT)
 
-            if (t>iT) and ((t-1)%Lf == 0):
-                Jq = self.train_rainbow(t, beta)
-                oldJq = Jq
-            else:
-                Jq = oldJq
+            # if (t>iT) and ((t-1)%Lf == 0):
+            #     Jq = self.train_rainbow(t, beta)
+            #     oldJq = Jq
+            # else:
+            #     Jq = oldJq
 
             if ((t-1)%Vf == 0):
                 self.agent._evaluation_mode(True)
                 VZ, VS, VL = self.evaluate()
                 self.agent._evaluation_mode(False)
-                logs['data/env_buffer_size                '] = self.buffer_n.size
-                logs['training/rainbow/Jq                     '] = Jq
+                logs['data/env_buffer_size                '] = self.buffer._size()
+                # logs['training/rainbow/Jq                 '] = Jq
                 logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
                 logs['learning/real/rollout_return_std    '] = np.std(ZList)
                 logs['learning/real/rollout_length        '] = np.mean(LList)
@@ -142,8 +136,8 @@ class RainbowLearner(MFRL):
         self.agent._evaluation_mode(True)
         VZ, VS, VL = self.evaluate()
         self.agent._evaluation_mode(False)
-        logs['data/env_buffer_size                '] = self.buffer_n.size
-        logs['training/rainbow/Jq                     '] = np.mean(JQList)
+        logs['data/env_buffer_size                '] = self.buffer._size()
+        # logs['training/rainbow/Jq                  '] = np.mean(JQList)
         logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
         logs['learning/real/rollout_return_std    '] = np.std(ZList)
         logs['learning/real/rollout_length        '] = np.mean(LList)
@@ -160,12 +154,10 @@ class RainbowLearner(MFRL):
         t: int,
         beta: float) -> T.Tensor:
 
-        batch_size = self.configs['data']['batch_size']
-        TUf = self.configs['algorithm']['hyper-parameters']['target_update_frequency']
-        batch_per = self.buffer_per.sample_batch(batch_size, beta=beta, device=self._device_)
-        idxs = batch_per['idxs']
-        batch_n = self.buffer_n.sample_batch_from_idxs(idxs, device=self._device_)
-        Jq = self.update_online_net(batch_per, batch_n)
+        batch_size = self.configs['data']['batch-size']
+        TUf = self.configs['algorithm']['hyper-parameters']['target-update-frequency']
+        batch_per = self.buffer.sample_batch(batch_size)
+        Jq = self.update_online_net(batch)
         Jq = Jq.item()
         if ((t-1)%TUf == 0): self.update_target_net()
 
@@ -175,47 +167,42 @@ class RainbowLearner(MFRL):
 
     def update_online_net(
         self,
-        batch_per: Dict[str, np.ndarray],
-        batch_n: Dict[str, np.ndarray]) -> T.Tensor:
+        batch: Dict[str, np.ndarray]) -> T.Tensor:
 
+        norm_clip = self.configs['critic']['optimizer']['norm-clip']
         prio_eps = self.configs['algorithm']['hyper-parameters']['prio-eps']
-        n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
-        gamma = self.configs['algorithm']['hyper-parameters']['gamma']
-        gamma_n = gamma ** n_steps
 
-        idxs = batch_per['idxs']
-        importance_ws = T.FloatTensor(batch_per['importance_ws']).to(self._device_)
+        idxs = batch['tree_idxs']
+        importance_ws = batch['importance_ws']
 
-        Jq_per = self.compute_Jq_rainbow(batch_per, gamma)
-        Jq_n = self.compute_Jq_rainbow(batch_n, gamma_n)
-        Jq_biased = Jq_per + Jq_n
+        Jq_biased = self.compute_Jq_rainbow(batch, gamma)
         Jq = T.mean(importance_ws * Jq_biased)
 
         self.agent.online_net.optimizer.zero_grad()
         Jq.backward()
-        clip_grad_norm_(self.agent.online_net.parameters(), 10.0)
+        clip_grad_norm_(self.agent.online_net.parameters(), norm_clip)
         self.agent.online_net.optimizer.step()
 
-        Jq_per = Jq_per.detach().cpu().numpy()
-        new_prios = Jq_per + prio_eps
-        self.buffer_per.update_prios(idxs, new_prios)
+        Jq_biased = Jq_biased.detach().cpu().numpy()
+        new_prios = Jq_biased + prio_eps
+        self.buffer.update_prios(idxs, new_prios)
 
         return Jq
 
     def compute_Jq_rainbow(
         self,
-        batch: int,
-        gamma: float):
+        batch: int):
+        gamma = self.configs['algorithm']['hyper-parameters']['gamma']
         atom_size = self.configs['algorithm']['hyper-parameters']['atom-size']
         v_min = self.configs['algorithm']['hyper-parameters']['v-min']
         v_max = self.configs['algorithm']['hyper-parameters']['v-max']
-        batch_size = self.configs['data']['batch_size']
+        batch_size = self.configs['data']['batch-size']
 
-        observations = T.FloatTensor(batch['observations']).to(self._device_)
-        actions = T.LongTensor(batch['actions']).to(self._device_)
-        rewards = T.FloatTensor(batch['rewards']).to(self._device_)
-        observations_next = T.FloatTensor(batch['observations_next']).to(self._device_)
-        terminals = T.FloatTensor(batch['terminals']).to(self._device_)
+        observations = batch['observations']
+        actions = batch['actions']
+        rewards = batch['rewards']
+        observations_next = batch['observations_next']
+        terminals = batch['terminals']
 
         delatZ = float(v_max-v_min) / (atom_size-1)
 
@@ -265,9 +252,9 @@ class RainbowLearner(MFRL):
 
 def main(configurations, seed, device, wb):
 
-    print('Start Rainbow experiment\n')
+    print('Start Rainbow experiment')
     # print('Configurations:\n', json.dumps(configurations, indent=4, sort_keys=False))
-    print('\n')
+    # print('\n')
 
     algorithm = configurations['algorithm']['name']
     environment = configurations['environment']['name']
@@ -287,7 +274,12 @@ def main(configurations, seed, device, wb):
 
     rainbow_learner = RainbowLearner(configurations, seed, device, wb)
 
-    # rainbow_learner.learn()
+    rainbow_learner.learn()
+
+    # LS = int(1e3)
+    # LT = trange(1, LS+1, desc=f'seed={seed}', position=0)
+    # for t in LT:
+    #     time.sleep(0.05)
 
     print('\n')
     print('... End Rainbow experiment')
@@ -322,11 +314,11 @@ if __name__ == "__main__":
     configurations['environment']['name'] = args.env
     configurations['environment']['n-envs'] = args.n_envs
 
-    LS = int(1e3)
-    LT = trange(1, LS+1, desc=f'seed={seed}', position=0)
-    for t in LT:
-        time.sleep(0.005)
+    # LS = int(1e3)
+    # LT = trange(1, LS+1, desc=f'seed={seed}', position=0)
+    # for t in LT:
+    #     time.sleep(0.005)
 
-    # main(configurations, seed, device, wb)
+    main(configurations, seed, device, wb)
 
     kill_process('monitor.py')
