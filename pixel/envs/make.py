@@ -20,6 +20,8 @@ from gym.vector.async_vector_env import AsyncVectorEnv
 from gym.vector.sync_vector_env import SyncVectorEnv
 # from gym.vector.vector_env import VectorEnv, VectorEnvWrapper
 
+import warnings
+warnings.filterwarnings('ignore')
 
 
 class GymMaker:
