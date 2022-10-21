@@ -192,8 +192,6 @@ class MFRL:
                 observation, info = self.eval_env.reset()
                 while True:
                     action = self.agent.get_greedy_action(observation, evaluation=True)
-                    # print('observation: ', observation.shape)
-                    # print('action: ', action)
                     observation, reward, terminated, truncated, info = self.eval_env.step(action)
                     Z += reward
                     L += 1

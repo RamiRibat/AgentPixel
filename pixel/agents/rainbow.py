@@ -368,6 +368,9 @@ if __name__ == "__main__":
         random.seed(seed)
         np.random.seed(seed)
         T.manual_seed(seed)
+        if device == 'cuda':
+            T.cuda.manual_seed(seed)
+            T.backends.cudnn.enabled = True
 
     configurations = configs.configurations
     configurations['environment']['name'] = args.env
