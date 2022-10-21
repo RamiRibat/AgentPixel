@@ -42,8 +42,8 @@ configurations = {
 
     'evaluation': {
         'evaluate': True,
-        'eval-freq': int(5e3),
-        'episodes': 0,
+        'eval-freq': int(1e5),
+        'episodes': 10,
         # 'eval-freq': int(1e5),
         # 'episodes': 10,
         'render': False,
