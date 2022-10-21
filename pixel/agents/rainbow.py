@@ -127,18 +127,18 @@ class RainbowLearner(MFRL):
 
             # beta = self.update_beta(beta, total_steps, LT)
 
-            if (total_steps>iT):
-                self.update_buffer_beta()
-                if total_steps>(Lf*update_counter):
-                    # for g in range(total_steps//(Lf*update_counter)):
-                    # print(f't={total_steps} | q-update')
-                    Jq, target_counter = self.train_rainbow(total_steps, target_counter)
-                    oldJq = Jq
-                    update_counter += 1
-                else:
-                    Jq = oldJq
-            else:
-                Jq = oldJq
+            # if (total_steps>iT):
+            #     self.update_buffer_beta()
+            #     if total_steps>(Lf*update_counter):
+            #         # for g in range(total_steps//(Lf*update_counter)):
+            #         # print(f't={total_steps} | q-update')
+            #         Jq, target_counter = self.train_rainbow(total_steps, target_counter)
+            #         oldJq = Jq
+            #         update_counter += 1
+            #     else:
+            #         Jq = oldJq
+            # else:
+            #     Jq = oldJq
 
             # if ((t-1)%Vf == 0):
             if total_steps>(Vf*logs_counter):
@@ -152,7 +152,7 @@ class RainbowLearner(MFRL):
                 VZ, VS, VL = self.evaluate()
                 self.agent._evaluation_mode(False)
                 logs['data/env_buffer_size                '] = self.buffer._size()
-                logs['training/rainbow/Jq                 '] = Jq
+                # logs['training/rainbow/Jq                 '] = Jq
                 logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
                 logs['learning/real/rollout_return_std    '] = np.std(ZList)
                 logs['learning/real/rollout_length        '] = np.mean(LList)
@@ -175,7 +175,7 @@ class RainbowLearner(MFRL):
         VZ, VS, VL = self.evaluate()
         self.agent._evaluation_mode(False)
         logs['data/env_buffer_size                '] = self.buffer._size()
-        logs['training/rainbow/Jq                 '] = Jq # np.mean(JQList)
+        # logs['training/rainbow/Jq                 '] = Jq # np.mean(JQList)
         logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
         logs['learning/real/rollout_return_std    '] = np.std(ZList)
         logs['learning/real/rollout_length        '] = np.mean(LList)
