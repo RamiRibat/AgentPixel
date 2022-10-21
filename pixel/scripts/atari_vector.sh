@@ -3,8 +3,6 @@
 
 #SBATCH --partition=p100
 
-#SBATCH --gres=gpu:0
-
 #SBATCH --qos=normal
 
 #SBATCH --cpus-per-task=4
