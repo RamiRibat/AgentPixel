@@ -40,7 +40,7 @@ class NDCQNetwork(nn.Module):
         self.support = T.linspace(
                             hyper_para['v-min'],
                             hyper_para['v-max'],
-                            hyper_para['atom-size'])
+                            hyper_para['atom-size']).to(device)
 
         if obs_dim == 'pixel':
             self.feature_layer = Encoder(hyper_para['history'], configs['encoder'])
