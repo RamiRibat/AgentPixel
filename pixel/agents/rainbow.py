@@ -147,7 +147,7 @@ class RainbowLearner(MFRL):
                 VZ, VS, VL = self.evaluate()
                 self.agent._evaluation_mode(False)
                 logs['data/env_buffer_size                '] = self.buffer._size()
-                # logs['training/rainbow/Jq                 '] = Jq
+                logs['training/rainbow/Jq                 '] = Jq
                 logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
                 logs['learning/real/rollout_return_std    '] = np.std(ZList)
                 logs['learning/real/rollout_length        '] = np.mean(LList)
@@ -157,7 +157,8 @@ class RainbowLearner(MFRL):
                 logs['time/sps                            '] = sps
                 logs['time/sps-avg                        '] = np.mean(SPSList)
                 RainbowLT.set_postfix({'T': total_steps,'S/S': sps, 'LZ': np.mean(ZList), 'VZ': np.mean(VZ)})
-                if self.WandB: wandb.log(logs, step=total_steps)
+                if self.WandB:
+                    wandb.log(logs, step=total_steps)
                 logs_counter += 1
             if total_steps >= LT: break
 
@@ -165,14 +166,15 @@ class RainbowLearner(MFRL):
         VZ, VS, VL = self.evaluate()
         self.agent._evaluation_mode(False)
         logs['data/env_buffer_size                '] = self.buffer._size()
-        # logs['training/rainbow/Jq                  '] = Jq # np.mean(JQList)
+        logs['training/rainbow/Jq                 '] = Jq # np.mean(JQList)
         logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
         logs['learning/real/rollout_return_std    '] = np.std(ZList)
         logs['learning/real/rollout_length        '] = np.mean(LList)
         logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
         logs['evaluation/episodic_return_std      '] = np.std(VZ)
         logs['evaluation/episodic_length_mean     '] = np.mean(VL)
-        if self.WandB: wandb.log(logs, step=t)
+        if self.WandB:
+            wandb.log(logs, step=total_steps)
 
         self.learn_env.close()
         self.eval_env.close()
