@@ -63,21 +63,83 @@ class MFRL:
         elif buffer_type == 'pixel-per': # Rainbow
             self.buffer = PixelPER(buffer_cfgs, hyper_para, device=self._device_)
 
-    def interact(self, observation, Z, L, t, Traj, epsilon=0.001):
+    def interact(self, observation, mask, Z, L, t, Traj, epsilon=0.001):
+        n_envs = self.configs['environment']['n-envs']
+        n_stacks = self.configs['environment']['n-stacks']
         xT = self.configs['learning']['expl-steps']
+
+        if mask.sum() == 0:
+            Z, S, L, Traj = 0, 0, 0, Traj+1
+            observation, info = self.learn_env.reset()
+            mask = np.ones([max(1, n_envs)], dtype=bool)
+
         if t > xT:
             action = self.agent.get_action(observation, epsilon=epsilon)
         else:
             action = self.learn_env.action_space.sample()
+
+        # print('observation: ', observation.shape)
+        # print('action: ', action)
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
-        self.append_sard_in_buffer(observation, action, reward, terminated)
+        # print('reward: ', reward)
+        # print('terminated: ', terminated)
+
+        if self.configs['environment']['n-envs'] == 0:
+            observation = np.array([observation])
+            action = np.array([action])
+            reward = np.array([reward])
+            terminated = np.array([terminated])
+            truncated = np.array([truncated])
+
+        self.append_sard_in_buffer(
+            observation[mask],
+            action[mask],
+            reward[mask],
+            terminated[mask])
+
         observation = observation_next
-        Z += reward
+        mask[mask] = ~terminated[mask]
+        mask[mask] = ~truncated[mask]
+
+        # print('mask: ', mask)
+
+        Z += np.mean(reward)
         L += 1
-        if terminated or truncated:
+
+        return observation, mask, Z, L, Traj
+
+    def interact_vec(self, observation, mask, Z, L, t, Traj, epsilon=0.001):
+        n_envs = self.configs['environment']['n-envs']
+        n_stacks = self.configs['environment']['n-stacks']
+        xT = self.configs['learning']['expl-steps']
+
+        if mask.sum()==0:
             Z, S, L, Traj = 0, 0, 0, Traj+1
             observation, info = self.learn_env.reset()
-        return observation, Z, L, Traj
+            mask = np.ones([max(1, n_envs)], dtype=bool)
+
+        if t > xT:
+            action = self.agent.get_action(observation, epsilon=epsilon)
+        else:
+            action = self.learn_env.action_space.sample()
+
+        print('observation: ', observation.shape)
+        print('action: ', action)
+        observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
+        print('reward: ', reward)
+        self.append_sard_in_buffer(
+            observation[mask*n_stacks],
+            action[mask],
+            reward[mask],
+            terminated[mask])
+        observation = observation_next
+        mask[mask] = ~terminated[mask]
+        mask[mask] = ~truncated[mask]
+
+        Z += reward
+        L += 1
+
+        return observation, mask, Z, L, Traj
 
     def append_sard_in_buffer(
         self,
@@ -130,6 +192,8 @@ class MFRL:
                 observation, info = self.eval_env.reset()
                 while True:
                     action = self.agent.get_greedy_action(observation, evaluation=True)
+                    # print('observation: ', observation.shape)
+                    # print('action: ', action)
                     observation, reward, terminated, truncated, info = self.eval_env.step(action)
                     Z += reward
                     L += 1

@@ -56,42 +56,68 @@ def process_work(seeds, processes_list):
 def main(external_args):
     exp_grid = experiment_grid(external_args)
     for (agent, configs, info) in exp_grid:
-        seeds = external_args.seed
-        device = external_args.device
-        wb = external_args.wb
         print('=' * 50)
         print(f'Start of an RL experiment')
         print(f"\t Algorithm:   {info['alg']}")
         print(f"\t Environment: {info['env']} X {info['n']}")
-        print(f"\t Random seed(s): {seeds}")
-        print('=' * 50)
-        works_vars = [ [agent, configs, info, seed, device, wb] for seed in seeds]
+        for seed in external_args.seed:
+            print(f"\t Random seed: {seed}")
+            print('=' * 50)
 
-        work_processes = [ [
-            'python', agent,
-            '--configs', str(configs),
-            '--env', info['env'],
-            '--n-env', str(info['n']),
-            '--seed', str(seed),
-            '--device', device,
-            '--wb', str(wb)
-            ] for seed in seeds ]
-        monitor_process = ['python',  os.getcwd() + '/pixel/utils/monitor.py']
-        work_processes.append(monitor_process)
-
-        process_work(seeds, work_processes)
-
-            # subprocess.run(['python', agent,
-            #                 '--env', info['env'],
-            #                 '--n-env', str(info['n']),
-            #                 '--configs', str(configs),
-            #                 '--seed', str(seed),
-            #                 '--device', external_args.device,
-            #                 '--wb', str(external_args.wb) ])
+            subprocess.run(['python', agent,
+                            '--env', info['env'],
+                            '--n-env', str(info['n']),
+                            '--configs', str(configs),
+                            '--seed', str(seed),
+                            '--device', external_args.device,
+                            '--wb', str(external_args.wb) ])
 
         print('\n')
         print('End of the RL experiment')
         print('=' * 50)
+
+
+# def main2(external_args):
+#     exp_grid = experiment_grid(external_args)
+#     for (agent, configs, info) in exp_grid:
+#         seeds = external_args.seed
+#         device = external_args.device
+#         wb = external_args.wb
+#         print('=' * 50)
+#         print(f'Start of an RL experiment')
+#         print(f"\t Algorithm:   {info['alg']}")
+#         print(f"\t Environment: {info['env']} X {info['n']}")
+#         print(f"\t Random seed(s): {seeds}")
+#         print('=' * 50)
+#         works_vars = [ [agent, configs, info, seed, device, wb] for seed in seeds]
+#
+#         work_processes = [ [
+#             'python', agent,
+#             '--configs', str(configs),
+#             '--env', info['env'],
+#             '--n-env', str(info['n']),
+#             '--seed', str(seed),
+#             '--device', device,
+#             '--wb', str(wb)
+#             ] for seed in seeds ]
+#         monitor_process = ['python',  os.getcwd() + '/pixel/utils/monitor.py']
+#         work_processes.append(monitor_process)
+#
+#         process_work(seeds, work_processes)
+#
+#             # subprocess.run(['python', agent,
+#             #                 '--env', info['env'],
+#             #                 '--n-env', str(info['n']),
+#             #                 '--configs', str(configs),
+#             #                 '--seed', str(seed),
+#             #                 '--device', external_args.device,
+#             #                 '--wb', str(external_args.wb) ])
+#
+#         print('\n')
+#         print('End of the RL experiment')
+#         print('=' * 50)
+#
+
 
 
 if __name__ == "__main__":

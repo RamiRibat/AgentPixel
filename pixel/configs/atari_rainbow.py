@@ -61,11 +61,12 @@ configurations = {
             # 'alpha': 0.2,
             'omega': 0.5,
             'beta': 0.4,
-            # 'prio-eps': 1e-6,
+            'prio-eps': 1e-6,
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            'target-update-frequency': int(8e3),
+            'target-update-frequency': int(8e1),
+            # 'target-update-frequency': int(8e3),
         }
     },
 

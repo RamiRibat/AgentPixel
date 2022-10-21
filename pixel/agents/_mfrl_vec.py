@@ -96,7 +96,6 @@ class MFRL:
         xT = self.configs['learning']['expl_steps']
 
         if mask.sum()==0:
-            # print('Reset Env')
             Z, S, L, Traj = 0, 0, 0, Traj+1
             observation, info = self.learn_envs.reset()
             mask = np.ones([num_envs], dtype=bool)
@@ -108,12 +107,6 @@ class MFRL:
         # else:
         #     action = self.learn_envs.action_space.sample()
         observation_next, reward, terminated, truncated, info = self.learn_envs.step(action)
-        # print('observation: ', observation.shape)
-        # print('action: ', action.shape)
-        # print('mask: ', mask)
-        # print('terminated: ', terminated)
-        # print('truncated: ', truncated)
-        # self.store_sarsd_in_buffer(observation, action, reward, observation_next, terminated)
         self.store_sarsd_in_buffer(
             observation[mask],
             action[mask],
@@ -123,15 +116,9 @@ class MFRL:
         observation = observation_next
         mask[mask] = ~terminated[mask]
         mask[mask] = ~truncated[mask]
-        # mask = ~terminated
 
         Z += reward
         L += 1
-        # if mask.sum()==0:
-        #     # print('Reset Env')
-        #     Z, S, L, Traj = 0, 0, 0, Traj+1
-        #     observation, info = self.learn_envs.reset()
-        #     mask = np.ones([num_envs], dtype=bool)
         return observation, mask, Z, L, Traj
 
     def store_sarsd_in_buffer(
