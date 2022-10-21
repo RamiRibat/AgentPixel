@@ -19,6 +19,7 @@ class NoisyLinear(nn.Module):
         self.reset_parametrs()
         self.reset_noise()
         self.evaluation_mode = False
+        # print('NoisyLinear.std: ', self.std_init)
 
     def forward(self, x: T.Tensor) -> T.Tensor:
         if self.evaluation_mode:
@@ -73,9 +74,13 @@ class NoisyNetwork(nn.Module):
     def __init__(self, in_dim: int, out_dim: int, configs: Dict):
         super(NoisyNetwork, self).__init__()
         self.net = nn.Sequential(
-            NoisyLinear(in_dim, configs['arch'][1]),
+            NoisyLinear(in_features=in_dim,
+                        out_features=configs['arch'][1],
+                        std_init=configs['std']),
             nn.ReLU(),
-            NoisyLinear(configs['arch'][1], out_dim)
+            NoisyLinear(in_features=configs['arch'][1],
+                        out_features=out_dim,
+                        std_init=configs['std'])
         )
 
     def forward(self, x: T.Tensor) -> T.Tensor:
@@ -102,25 +107,17 @@ class Encoder(nn.Module):
             if configs['arch'][0] == 'canonical':
                 self.net = nn.Sequential(
                     nn.Conv2d(in_dim, 32, kernel_size=8, stride=4, padding=0), nn.ReLU(),
-                    nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0), nn.ReLU(),
-                    nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0), nn.ReLU(),
+                    nn.Conv2d(32,     64, kernel_size=4, stride=2, padding=0), nn.ReLU(),
+                    nn.Conv2d(64,     64, kernel_size=3, stride=1, padding=0), nn.ReLU(),
                 )
             elif configs['arch'][0] == 'data-efficient':
                 self.net = nn.Sequential(
                     nn.Conv2d(in_dim, 32, kernel_size=5, stride=5, padding=0), nn.ReLU(),
-                    nn.Conv2d(32, 64, kernel_size=5, stride=5, padding=0), nn.ReLU(),
+                    nn.Conv2d(32,     64, kernel_size=5, stride=5, padding=0), nn.ReLU(),
                 )
+
             self.feature_dim = configs['arch'][1]
 
     def forward(self, x: T.Tensor) -> T.Tensor:
         latent_features = self.net(x)
         return latent_features.view(-1, self.feature_dim)
-
-
-class VisualNetwork(nn.Module):
-    def __init__(self, in_dim: int, out_dim: int):
-        super(Encoder, self).__init__()
-        pass
-
-    def forward(self, x: T.Tensor) -> T.Tensor:
-        return self.net(x)

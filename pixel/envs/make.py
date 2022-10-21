@@ -26,6 +26,7 @@ from gym.vector.sync_vector_env import SyncVectorEnv
 class GymMaker:
     def __init__(self, configs, eval=False, device=None, seed=0):
         # print('Initialize GymMaker')
+        self.configs = configs
         self.eval = eval
         self._device_ = device
         self.seed = seed
@@ -44,11 +45,17 @@ class GymMaker:
         elif isinstance(self.env.single_action_space, Discrete):
             self.action_dim = self.env.single_action_space.n
         self._seed_env()
+        # print('reward-range: ', self.env.reward_range)
+        # print('env: ', self.env.spec)
 
     def _gym_make(self, configs):
         def create_env():
             def _make():
-                env = gym.make(id=configs['name'], frameskip=1)
+                env = gym.make(
+                        id=configs['name'],
+                        repeat_action_probability=0,
+                        frameskip=1,
+                        )
                 if configs['state'] == 'pixel':
                     env = AtariPreprocessing(env, frame_skip=configs['frame-skip'])
                     env = FrameStack(env, num_stack=configs['n-stacks'])
@@ -79,7 +86,10 @@ class GymMaker:
             return self.env.reset()
 
     def step(self, action):
-        return self.env.step(action)
+        observation_next, reward, terminated, truncated, info = self.env.step(action)
+        if self.configs['reward-clip']:
+            reward = np.clip(reward, -self.configs['reward-clip'], self.configs['reward-clip'])
+        return observation_next, reward, terminated, truncated, info
 
     def render(self):
         return self.env.render()

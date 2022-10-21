@@ -125,14 +125,18 @@ class RainbowLearner(MFRL):
 
             total_steps += mask.sum()
 
-            # beta = self.update_beta(beta, t, LT)
+            # beta = self.update_beta(beta, total_steps, LT)
 
-            if (total_steps>iT) and total_steps>(Lf*update_counter):
-                # for g in range(total_steps//(Lf*update_counter)):
-                # print(f't={total_steps} | q-update')
-                Jq, target_counter = self.train_rainbow(total_steps, target_counter)
-                oldJq = Jq
-                update_counter += 1
+            if (total_steps>iT):
+                self.update_buffer_beta()
+                if total_steps>(Lf*update_counter):
+                    # for g in range(total_steps//(Lf*update_counter)):
+                    # print(f't={total_steps} | q-update')
+                    Jq, target_counter = self.train_rainbow(total_steps, target_counter)
+                    oldJq = Jq
+                    update_counter += 1
+                else:
+                    Jq = oldJq
             else:
                 Jq = oldJq
 
@@ -142,6 +146,7 @@ class RainbowLearner(MFRL):
                 cur_time_real = time.time()
                 total_time_real = cur_time_real - start_time_real
                 sps = total_steps//total_time_real
+                SPSList.append(sps)
 
                 self.agent._evaluation_mode(True)
                 VZ, VS, VL = self.evaluate()
@@ -162,6 +167,10 @@ class RainbowLearner(MFRL):
                 logs_counter += 1
             if total_steps >= LT: break
 
+
+        total_time_real = cur_time_real - start_time_real
+        sps = total_steps//total_time_real
+        SPSList.append(sps)
         self.agent._evaluation_mode(True)
         VZ, VS, VL = self.evaluate()
         self.agent._evaluation_mode(False)
@@ -173,6 +182,8 @@ class RainbowLearner(MFRL):
         logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
         logs['evaluation/episodic_return_std      '] = np.std(VZ)
         logs['evaluation/episodic_length_mean     '] = np.mean(VL)
+        logs['time/sps                            '] = sps
+        logs['time/sps-avg                        '] = np.mean(SPSList)
         if self.WandB:
             wandb.log(logs, step=total_steps)
 
@@ -189,7 +200,7 @@ class RainbowLearner(MFRL):
 
         batch = self.buffer.sample_batch(batch_size)
         Jq = self.update_online_net(batch)
-        Jq = 0 #Jq.item()
+        Jq = Jq.item()
         if total_steps>(TUf*target_counter):
             # print(f't={total_steps} > {TUf*target_counter} | target-update')
             self.update_target_net()
@@ -275,15 +286,21 @@ class RainbowLearner(MFRL):
 
         return Jq
 
-
     def update_target_net(self) -> None:
         self.agent.target_net.load_state_dict(self.agent.online_net.state_dict())
 
     def update_beta(self, beta, t, LT):
         fraction = min(t/LT, 1.0)
-        import json
         beta = beta + fraction * (1.0 - beta)
         return beta
+
+    def update_buffer_beta(self):
+        LT = self.configs['learning']['total-steps']
+        iT = self.configs['learning']['init-steps']
+        beta_i = self.configs['algorithm']['hyper-parameters']['beta']
+        beta = self.buffer.beta
+        beta_increase = (1-beta_i) / (LT-iT)
+        self.buffer.beta = min(beta + beta_increase, 1)
 
     def func2(self):
         pass

@@ -22,7 +22,7 @@ configurations = {
         'asynchronous': True,
         'n-stacks': 4,
         'frame-skip': 4,
-        'reward-clip': False,
+        'reward-clip': 1,
         'max-steps': int(27e3), # per episode
         'max-frames': int(108e3), # per episode
         'pre-process': ['AtariPreprocessing'],
@@ -59,8 +59,8 @@ configurations = {
             'n-steps': 3,
             'gamma': 0.99,
             # 'alpha': 0.2,
-            'omega': 0.5,
-            'beta': 0.4,
+            'omega': 0.5, # prio-exponent
+            'beta': 0.4, # prio-weight
             'prio-eps': 1e-6,
             'v-min': -10.0, #
             'v-max': 10.0,

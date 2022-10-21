@@ -93,6 +93,7 @@ class PixelPER: # Done
         self.gamma, self.omega, self.beta = hyper_para['gamma'], hyper_para['omega'], hyper_para['beta']
         self.t, self.transitions = 0, SegmentTree(self.capacity)
         self.gamma_n = T.tensor([self.gamma**i for i in range(self.n_steps)], dtype=T.float32, device=self._device_)
+        # print('beta: ', self.beta)
 
     def _size(self):
         return self.capacity if self.transitions.full else self.transitions.idx
@@ -112,6 +113,7 @@ class PixelPER: # Done
         self.transitions._update_prios(idxs, prios)
 
     def sample_batch(self, batch_size) -> Dict: # Done
+        # print('beta: ', self.beta)
         total_prios = self.transitions.total()
         segment_batch = self._sample_batch_from_segments(batch_size, total_prios)
         probs = segment_batch['probs'] / total_prios
