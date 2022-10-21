@@ -43,7 +43,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(5e2),
-        'episodes': 1,
+        'episodes': 0,
         # 'eval-freq': int(1e5),
         # 'episodes': 10,
         'render': False,
