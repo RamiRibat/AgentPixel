@@ -309,7 +309,7 @@ def main(configurations, seed, device, wb):
             group=group_name,
             name=exp_prefix,
             project=f'ATARI',
-            config=configs
+            config=configurations
         )
 
     rainbow_learner = RainbowLearner(configurations, seed, device, wb)
