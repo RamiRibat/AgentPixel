@@ -57,6 +57,9 @@ class NDCQNetwork(nn.Module):
 
     def forward(self, observation: T.Tensor) -> T.Tensor:
         distribution = self.distribution(observation)
+        print('observation: ', observation)
+        print('distribution: ', distribution)
+        print('self.support: ', self.support)
         q = T.sum(distribution*self.support, dim=2)
         return q
 
