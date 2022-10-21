@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=atrai_vector
 
-#SBATCH --partition=p100
+#SBATCH --partition=p100,t4v1,t4v2,rtx6000
 
 #SBATCH --qos=normal
 
