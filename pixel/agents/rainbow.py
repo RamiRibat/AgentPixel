@@ -127,18 +127,18 @@ class RainbowLearner(MFRL):
 
             # beta = self.update_beta(beta, total_steps, LT)
 
-            # if (total_steps>iT):
-            #     self.update_buffer_beta()
-            #     if total_steps>(Lf*update_counter):
-            #         # for g in range(total_steps//(Lf*update_counter)):
-            #         # print(f't={total_steps} | q-update')
-            #         Jq, target_counter = self.train_rainbow(total_steps, target_counter)
-            #         oldJq = Jq
-            #         update_counter += 1
-            #     else:
-            #         Jq = oldJq
-            # else:
-            #     Jq = oldJq
+            if (total_steps>iT):
+                self.update_buffer_beta()
+                if total_steps>(Lf*update_counter):
+                    # for g in range(total_steps//(Lf*update_counter)):
+                    # print(f't={total_steps} | q-update')
+                    Jq, target_counter = self.train_rainbow(total_steps, target_counter)
+                    oldJq = Jq
+                    update_counter += 1
+                else:
+                    Jq = oldJq
+            else:
+                Jq = oldJq
 
             # if ((t-1)%Vf == 0):
             if total_steps>(Vf*logs_counter):
