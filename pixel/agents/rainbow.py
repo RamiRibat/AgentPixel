@@ -55,9 +55,9 @@ class RainbowAgent:
     def get_greedy_action(self, observation, evaluation=False): # Select Action(s) based on greedy-policy
         with T.no_grad():
             if evaluation or self.configs['environment']['n-envs']==0:
-                return self.online_net(T.tensor(np.array(observation), dtype=T.float32)).argmax().cpu().numpy()
+                return self.online_net(T.tensor(np.array(observation), dtype=T.float32, device=self._device_)).argmax().cpu().numpy()
             else:
-                return self.online_net(T.tensor(np.array(observation), dtype=T.float32)).argmax(1).cpu().numpy()
+                return self.online_net(T.tensor(np.array(observation), dtype=T.float32, device=self._device_)).argmax(1).cpu().numpy()
 
     def get_action(self, observation, epsilon=None, evaluation=False):
         return self.get_greedy_action(observation, evaluation)
