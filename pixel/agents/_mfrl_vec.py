@@ -30,17 +30,11 @@ class MFRL:
             env.observation_space.seed(self.seed)
             env.reset(seed=self.seed)
         env_name = self.configs['environment']['name']
-        vectorized = self.configs['environment']['vectorized']
-
+        num_envs = self.configs['environment']['n-envs']
         evaluate = self.configs['evaluation']['evaluate']
-
-        if vectorized:
-            num_envs = self.configs['environment']['n-envs']
-            envs = make_env(id=env_name, num_envs=num_envs)
         # self.learn_env = gym.make(env_name)
         self.learn_envs = gym.vector.make(env_name, num_envs=num_envs)
         seed_env(self.learn_envs)
-
         if evaluate:
             # self.eval_env = gym.make(env_name)
             self.eval_env = gym.make(env_name)
@@ -51,7 +45,7 @@ class MFRL:
 
     def _set_buffer(self):
         obs_dim, act_dim = self.obs_dim, self.act_dim
-        num_envs = self.configs['environment']['n-envs']
+        n_envs = self.configs['environment']['n-envs']
         max_size = self.configs['data']['buffer_size']
         batch_size = self.configs['data']['batch_size']
         buffer_type = self.configs['data']['buffer_type']
@@ -64,11 +58,11 @@ class MFRL:
         #     n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
         #     self.buffer = NSRBuffer(obs_dim, max_size, batch_size, n_steps=1)
         #     self.buffer_n = NSRBuffer(obs_dim, max_size, batch_size, n_steps=n_steps)
-        # elif buffer_type == 'per+nSteps':
-        #     alpha = self.configs['algorithm']['hyper-parameters']['alpha']
-        #     n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
-        #     self.buffer_per = PERBuffer(obs_dim, max_size, batch_size, alpha)
-        #     self.buffer_n = NSRBuffer(obs_dim, max_size, batch_size, n_steps=n_steps)
+        elif buffer_type == 'per+nSteps':
+            alpha = self.configs['algorithm']['hyper-parameters']['alpha']
+            n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
+            self.buffer_per = PERBuffer(obs_dim, max_size, n_envs, batch_size, alpha)
+            self.buffer_n = NSRBuffer(obs_dim, max_size, n_envs, batch_size, n_steps=n_steps)
 
     def interact(self, observation, Z, L, t, Traj, epsilon=0.001):
         xT = self.configs['learning']['expl_steps']
@@ -91,34 +85,63 @@ class MFRL:
         #     observation, info = self.learn_envs.reset()
         return observation, Z, L, Traj
 
-    def interact_vec(self, observation, mask, Z, L, t, Traj, epsilon=0.001):
-        num_envs = self.configs['environment']['n-envs']
+    def interact_vec(self, observation, mask, Z, L, T, Traj, epsilon=0.001):
+        n_envs = self.configs['environment']['n-envs']
         xT = self.configs['learning']['expl_steps']
 
-        if mask.sum()==0:
-            Z, S, L, Traj = 0, 0, 0, Traj+1
-            observation, info = self.learn_envs.reset()
-            mask = np.ones([num_envs], dtype=bool)
-
-        if t > xT:
+        if T > xT:
             # action = self.agent.get_eps_greedy_action(observation, epsilon=epsilon)
             action = self.agent.get_action(observation, epsilon=epsilon)
             # action = self.agent.get_action(observation, epsilon=1.0)
-        # else:
-        #     action = self.learn_envs.action_space.sample()
+        else:
+            action = self.learn_envs.action_space.sample()
+
         observation_next, reward, terminated, truncated, info = self.learn_envs.step(action)
+        # print(f'terminated:{terminated} | truncated:{truncated}')
+        print(f'T={T} | observation: ', observation)
+        # print('action: ', action.shape)
+        # print('mask: ', mask)
+        # print('terminated: ', terminated)
+        # print('truncated: ', truncated)
+        # self.store_sarsd_in_buffer(observation, action, reward, observation_next, terminated)
+
+        Z += np.mean(reward[mask])
+        L += mask.sum()
+
         self.store_sarsd_in_buffer(
-            observation[mask],
-            action[mask],
-            reward[mask],
-            observation_next[mask],
-            terminated[mask])
+            observation,
+            action,
+            reward,
+            observation_next,
+            terminated,
+            mask)
         observation = observation_next
         mask[mask] = ~terminated[mask]
         mask[mask] = ~truncated[mask]
+        if mask.sum()==0:
+            # print('env.reset')
+            Z, S, L, Traj = 0, 0, 0, Traj+1
+            observation, info = self.learn_envs.reset()
+            mask = np.ones([n_envs], dtype=bool)
 
-        Z += reward
-        L += 1
+
+        # self.store_sarsd_in_buffer(
+        #     observation[mask],
+        #     action[mask],
+        #     reward[mask],
+        #     observation_next[mask],
+        #     terminated[mask])
+        # observation = observation_next
+        # mask[mask] = ~terminated[mask]
+        # mask[mask] = ~truncated[mask]
+        # mask = ~terminated
+
+        # if mask.sum()==0:
+        #     # print('env.reset')
+        #     Z, S, L, Traj = 0, 0, 0, Traj+1
+        #     observation, info = self.learn_envs.reset()
+        #     mask = np.ones([n_envs], dtype=bool)
+
         return observation, mask, Z, L, Traj
 
     def store_sarsd_in_buffer(
@@ -127,7 +150,8 @@ class MFRL:
         action,
         reward,
         observation_next,
-        terminated):
+        terminated,
+        mask):
 
         buffer_type = self.configs['data']['buffer_type']
         if (buffer_type == 'simple') or (buffer_type == 'per'):
@@ -148,16 +172,20 @@ class MFRL:
                                       observation_next,
                                       terminated)
         elif buffer_type == 'per+nSteps':
-            self.buffer_per.store_sarsd(observation,
-                                    action,
-                                    reward,
-                                    observation_next,
-                                    terminated)
-            self.buffer_n.store_sarsd(observation,
-                                      action,
-                                      reward,
-                                      observation_next,
-                                      terminated)
+            self.buffer_per.store_sarsd(
+                                observation,
+                                action,
+                                reward,
+                                observation_next,
+                                terminated,
+                                mask)
+            self.buffer_n.store_sarsd(
+                                observation,
+                                action,
+                                reward,
+                                observation_next,
+                                terminated,
+                                mask)
 
     def evaluate(self):
         evaluate = self.configs['evaluation']['evaluate']

@@ -16,7 +16,8 @@ import torch as T
 nn, F = T.nn, T.nn.functional
 from torch.nn.utils import clip_grad_norm_
 
-from pixel.agents._mfrl import MFRL
+# from pixel.agents._mfrl import MFRL
+from pixel.agents._mfrl_vec import MFRL
 from pixel.networks.value_functions import NDCQNetwork
 
 
@@ -54,7 +55,10 @@ class RainbowAgent:
 
     def get_greedy_action(self, observation, evaluation=False): # Select Action(s) based on eps_greedy
         with T.no_grad():
-            return self.online_net(T.FloatTensor(observation).to(self._device_)).argmax().cpu().numpy()
+            if evaluation or self.configs['environment']['n-envs']==0:
+                return self.online_net(T.FloatTensor(observation).to(self._device_)).argmax().cpu().numpy()
+            else:
+                return self.online_net(T.FloatTensor(observation).to(self._device_)).argmax(1).cpu().numpy()
 
     def get_action(self, observation, epsilon=None, evaluation=False):
         return self.get_greedy_action(observation, evaluation)
@@ -88,111 +92,123 @@ class RainbowLearner(MFRL):
         self.agent = RainbowAgent(self.obs_dim, self.act_dim, self.configs, self.seed, self._device_)
 
     def learn(self):
-        LT = self.configs['learning']['total-steps']
-        iT = self.configs['learning']['init-steps']
-        xT = self.configs['learning']['expl-steps']
+        n_envs = self.configs['environment']['n-envs']
+        LT = self.configs['learning']['steps']
+        iT = self.configs['learning']['init_steps']
+        xT = self.configs['learning']['expl_steps']
         Lf = self.configs['learning']['frequency']
         Vf = self.configs['evaluation']['frequency']
         alg = self.configs['algorithm']['name']
         beta = self.configs['algorithm']['hyper-parameters']['beta']
 
         oldJq = 0
+        total_steps, g = 0, 0
         Z, S, L, Traj = 0, 0, 0, 0
-        RainbowLT = trange(1, LT+1, desc=alg)
-        observation, info = self.learn_env.reset()
+        # RainbowLT = trange(1, LT+1, desc=alg)
+        RainbowLT = trange(1, LT+1, n_envs, desc=alg)
+        observation, info = self.learn_envs.reset()
+        mask = np.ones([num_envs], dtype=bool)
         logs, ZList, LList, JQList = dict(), [0], [0], []
+        update_counter, target_counter, log_counter = 0, 0, 0
         # EPS = []
 
         for t in RainbowLT:
-            observation, Z, L, Traj_new = self.interact(observation, Z, L, t, Traj)
-
+            observation, mask, Z, L, Traj_new = self.interact_vec(observation, mask, Z, L, t, Traj)
             if (Traj_new - Traj) > 0:
                 ZList.append(lastZ), LList.append(lastL)
             else:
                 lastZ, lastL = Z, L
             Traj = Traj_new
 
-            # beta = self.update_beta(beta, t, LT)
-            self.update_buffer_beta0(t)
-            # self.update_buffer_beta()
+            total_steps += mask.sum()
 
-            # if (t>iT) and (self.buffer_n.size >= iT):
-            if (t>iT) and (self.buffer.size() >= iT):
-                if ((t-1)%Lf == 0):
-                    Jq = self.train_rainbow(t, beta)
-                    oldJq = Jq
+            # beta = self.update_beta(beta, t, LT)
+
+            if (t>iT) and (total_steps>(Lf*update_counter)):
+                # Jq = self.train_rainbow(t, beta)
+                # oldJq = Jq
+                # for _ in range(mask.sum()):
+                beta = self.update_beta(beta, total_steps, LT)
+                Jq, target_counter = self.train_rainbow(total_steps, beta, target_counter)
+                oldJq = Jq
+                update_counter += 1
             else:
                 Jq = oldJq
 
-            if ((t-1)%Vf == 0):
-                # print(f't={t} | eval')
-                # if (t-1) >= Vf:
-                #     print(f'buffer.observation[{t-Vf-1}:{t-1}]', self.buffer_n.obs_buf[t-Vf-1:t-1])
+            # if ((t-1)%Vf == 0):
+            if total_steps>(Vf*log_counter):
+                print(f't={total_steps} | eval')
                 self.agent._evaluation_mode(True)
                 VZ, VS, VL = self.evaluate()
                 self.agent._evaluation_mode(False)
-                # logs['data/env_buffer_size                '] = self.buffer_n.size
-                logs['data/env_buffer_size                '] = self.buffer.size()
+                logs['data/env_buffer_size                '] = self.buffer_n.size
                 logs['training/rainbow/Jq                 '] = Jq
-                logs['training/rainbow/beta               '] = self.buffer.beta
                 logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
                 logs['learning/real/rollout_return_std    '] = np.std(ZList)
                 logs['learning/real/rollout_length        '] = np.mean(LList)
                 logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
                 logs['evaluation/episodic_return_std      '] = np.std(VZ)
                 logs['evaluation/episodic_length_mean     '] = np.mean(VL)
-                RainbowLT.set_postfix({'Traj': Traj, 'learnZ': np.mean(ZList), 'evalZ': np.mean(VZ)})
-                if self.WandB: wandb.log(logs, step=t)
+                RainbowLT.set_postfix({'T': f'{total_steps}/{LT}', 'VZ': np.mean(VZ)})
+                if self.WandB: wandb.log(logs, step=total_steps)
+                log_counter += 1
+
+            if total_steps >= LT: break
 
         self.agent._evaluation_mode(True)
         VZ, VS, VL = self.evaluate()
         self.agent._evaluation_mode(False)
-        # logs['data/env_buffer_size                '] = self.buffer_n.size
-        logs['data/env_buffer_size                '] = self.buffer.size()
+        logs['data/env_buffer_size                '] = self.buffer_n.size
         logs['training/rainbow/Jq                 '] = np.mean(JQList)
-        logs['training/rainbow/beta               '] = self.buffer.beta
         logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
         logs['learning/real/rollout_return_std    '] = np.std(ZList)
         logs['learning/real/rollout_length        '] = np.mean(LList)
         logs['evaluation/episodic_return_mean     '] = np.mean(VZ)
         logs['evaluation/episodic_return_std      '] = np.std(VZ)
         logs['evaluation/episodic_length_mean     '] = np.mean(VL)
-        if self.WandB: wandb.log(logs, step=t)
+        if self.WandB: wandb.log(logs, step=total_steps)
 
-        self.learn_env.close()
+        self.learn_envs.close()
         self.eval_env.close()
 
     def train_rainbow(
         self,
-        t: int,
-        beta: float) -> T.Tensor:
-        # print('train rainbow')
+        total_steps: int,
+        beta: float,
+        target_counter) -> T.Tensor:
 
-        batch_size = self.configs['data']['batch-size']
-        TUf = self.configs['algorithm']['hyper-parameters']['target-update-frequency']
-
-        batch = self.buffer.sample_batch(batch_size)
-        Jq = self.update_online_net(batch)
+        batch_size = self.configs['data']['batch_size']
+        TUf = self.configs['algorithm']['hyper-parameters']['target_update_frequency']
+        batch_per = self.buffer_per.sample_batch(batch_size, beta=beta, device=self._device_)
+        idxs = batch_per['idxs']
+        batch_n = self.buffer_n.sample_batch_from_idxs(idxs, device=self._device_)
+        Jq = self.update_online_net(batch_per, batch_n)
         Jq = Jq.item()
-
-        if ((t-1)%TUf == 0):
+        # if ((t-1)%TUf == 0):
+        if total_steps>(TUf*target_counter):
             self.update_target_net()
+            target_counter += 1
 
         self.agent.online_net.reset_noise()
         self.agent.target_net.reset_noise()
-
-        return Jq
+        return Jq, target_counter
 
     def update_online_net(
         self,
-        batch: Dict[str, np.ndarray]) -> T.Tensor:
+        batch_per: Dict[str, np.ndarray],
+        batch_n: Dict[str, np.ndarray]) -> T.Tensor:
 
         prio_eps = self.configs['algorithm']['hyper-parameters']['prio-eps']
+        n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
+        gamma = self.configs['algorithm']['hyper-parameters']['gamma']
+        gamma_n = gamma ** n_steps
 
-        idxs = batch['tree_idxs']
-        importance_ws = batch['importance_ws']
+        idxs = batch_per['idxs']
+        importance_ws = T.FloatTensor(batch_per['importance_ws']).to(self._device_)
 
-        Jq_biased = self.compute_Jq_rainbow(batch)
+        Jq_per = self.compute_Jq_rainbow(batch_per, gamma)
+        Jq_n = self.compute_Jq_rainbow(batch_n, gamma_n)
+        Jq_biased = Jq_per + Jq_n
         Jq = T.mean(importance_ws * Jq_biased)
 
         self.agent.online_net.optimizer.zero_grad()
@@ -200,30 +216,26 @@ class RainbowLearner(MFRL):
         clip_grad_norm_(self.agent.online_net.parameters(), 10.0)
         self.agent.online_net.optimizer.step()
 
-        Jq_biased = Jq_biased.detach().cpu().numpy()
-        new_prios = Jq_biased + prio_eps
-        self.buffer.update_prios(idxs, new_prios)
+        Jq_per = Jq_per.detach().cpu().numpy()
+        new_prios = Jq_per + prio_eps
+        self.buffer_per.update_prios(idxs, new_prios)
 
         return Jq
 
     def compute_Jq_rainbow(
         self,
-        batch: int):
-
-        batch_size = self.configs['data']['batch-size']
-
-        n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
+        batch: int,
+        gamma: float):
         atom_size = self.configs['algorithm']['hyper-parameters']['atom-size']
         v_min = self.configs['algorithm']['hyper-parameters']['v-min']
         v_max = self.configs['algorithm']['hyper-parameters']['v-max']
-        gamma = self.configs['algorithm']['hyper-parameters']['gamma']
-        gamma_n = gamma ** n_steps
+        batch_size = self.configs['data']['batch_size']
 
-        observations = batch['observations']
-        actions = batch['actions']
-        returns = batch['returns']
-        observations_next = batch['observations_next']
-        terminals = batch['terminals']
+        observations = T.FloatTensor(batch['observations']).to(self._device_)
+        actions = T.LongTensor(batch['actions']).to(self._device_)
+        rewards = T.FloatTensor(batch['rewards']).to(self._device_)
+        observations_next = T.FloatTensor(batch['observations_next']).to(self._device_)
+        terminals = T.FloatTensor(batch['terminals']).to(self._device_)
 
         # print('observations: ', observations.shape)
         # print('actions: ', actions.shape)
@@ -238,7 +250,7 @@ class RainbowLearner(MFRL):
             distribution_next = self.agent.target_net.distribution(observations_next)
             distribution_next = distribution_next[range(batch_size), q_next_actions]
 
-            tZ = returns + gamma_n*(1-terminals)*self.agent.online_net.support
+            tZ = rewards + gamma*(1-terminals)*self.agent.online_net.support
             tZ = tZ.clamp(min=v_min, max=v_max)
             b = (tZ - v_min) / delatZ
             lb = b.floor().long()
@@ -264,19 +276,10 @@ class RainbowLearner(MFRL):
     def update_target_net(self) -> None:
         self.agent.target_net.load_state_dict(self.agent.online_net.state_dict())
 
-    def update_buffer_beta0(self, T):
-        LT = self.configs['learning']['total-steps']
-        fraction = min(T/LT, 1.0)
-        beta = self.buffer.beta
-        self.buffer.beta = beta + fraction * (1.0 - beta)
-
-    def update_buffer_beta(self):
-        LT = self.configs['learning']['total-steps']
-        iT = self.configs['learning']['init-steps']
-        beta_i = self.configs['algorithm']['hyper-parameters']['beta']
-        beta = self.buffer.beta
-        beta_increase = (1-beta_i) / (LT-iT)
-        self.buffer.beta = min(beta + beta_increase, 1)
+    def update_beta(self, beta, t, LT):
+        fraction = min(t/LT, 1.0)
+        beta = beta + fraction * (1.0 - beta)
+        return beta
 
     def func2(self):
         pass
@@ -296,19 +299,20 @@ def main(exp_prefix, config, seed, device, wb):
         random.seed(seed), np.random.seed(seed), T.manual_seed(seed)
 
     alg_name = configs['algorithm']['name']
-    env_name = 'CP1' #configs['environment']['name']
+    env_name = 'CPv1' #configs['environment']['name']
     env_domain = configs['environment']['domain']
+    num_envs = configs['environment']['n-envs']
 
-    group_name = f"{env_name}-{alg_name}-11" # H < -2.7
+    # group_name = f"{env_name}-{alg_name}" # H < -2.7
+    # exp_prefix = f"seed:{seed}"
+    group_name = f"{env_name}-{alg_name}-X{num_envs}" # H < -2.7
     exp_prefix = f"seed:{seed}"
-    # print('group: ', group_name)
 
     if wb:
         wandb.init(
             group=group_name,
             name=exp_prefix,
-            # project=f'VECTOR',
-            project=f'CartPole',
+            project=f'VECTOR',
             config=configs
         )
 

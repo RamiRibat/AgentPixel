@@ -18,12 +18,12 @@ echo "RL Experiments w/ Bash"
 # python -m pixel.run -cfg cartpole_nsdqn -seed 2 -wb
 # python -m pixel.run -cfg cartpole_nsdqn -seed 3 -wb
 
-# python -m pixel.run -cfg cartpole_rainbow -seed 1 -wb
-# python -m pixel.run -cfg cartpole_rainbow -seed 2 -wb
-# python -m pixel.run -cfg cartpole_rainbow -seed 3 -wb
+python -m pixel.run -cfg cartpole_rainbow -seed 1 -wb
+python -m pixel.run -cfg cartpole_rainbow -seed 2 -wb
+python -m pixel.run -cfg cartpole_rainbow -seed 3 -wb
 
 # Vectorized
 
-python -m pixel.run -cfg cartpole_dqnvec -seed 1 -wb
-python -m pixel.run -cfg cartpole_dqnvec -seed 2 -wb
-python -m pixel.run -cfg cartpole_dqnvec -seed 3 -wb
+# python -m pixel.run -cfg cartpole_dqnvec -seed 1 -wb
+# python -m pixel.run -cfg cartpole_dqnvec -seed 2 -wb
+# python -m pixel.run -cfg cartpole_dqnvec -seed 3 -wb

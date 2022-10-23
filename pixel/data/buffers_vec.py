@@ -5,20 +5,17 @@ import random
 import numpy as np
 import torch as T
 
-blank_sard = (0, np.zeros((84,84), dtype=np.uint8), 0, 0.0, False)
-sard_dtype = np.dtype([
-    ('t', np.int32),
-    ('state', np.float32),
-    ('action', np.int32),
-    ('reward', np.float32),
-    ('terminal', np.bool_),
-])
-
 
 class ReplayBuffer:
     "Simple Replay Buffer for Discrete Action Space (Numpy)"
     # def __init__(self, obs_dim: int, act_dim: int, max_size: int, batch_size: int = 32, seed=0, device='cpu'):
     def __init__(self, obs_dim: int, num_envs: int, max_size: int, batch_size: int = 32, seed = 0, device = 'cpu'):
+        # max_size = max_size//num_envs
+        # self.obs_buf = np.zeros([max_size, n_envs, obs_dim], dtype=np.float32)
+        # self.act_buf = np.zeros([max_size, n_envs, 1], dtype=np.float32)
+        # self.rew_buf = np.zeros([max_size, n_envs, 1], dtype=np.float32)
+        # self.obs_next_buf = np.zeros([max_size, n_envs, obs_dim], dtype=np.float32)
+        # self.ter_buf = np.zeros([max_size, n_envs, 1], dtype=np.float32)
         self.obs_buf = np.zeros([max_size, obs_dim], dtype=np.float32)
         self.act_buf = np.zeros([max_size, 1], dtype=np.float32)
         self.rew_buf = np.zeros([max_size, 1], dtype=np.float32)
@@ -35,9 +32,18 @@ class ReplayBuffer:
                     o_next: np.ndarray,
                     d: bool) -> None:
         # num_envs = self.num_envs
-        n_steps = 1 #o.shape[0] #self.num_envs
-        # if self.ptr+n_steps > self.max_size:
-        #     self.ptr = 0
+        n_steps = o.shape[0] #self.num_envs
+        # print('num_envs: ', num_envs)
+        # self.obs_buf[self.ptr] = o
+        # self.act_buf[self.ptr] = a.reshape(-1,1)
+        # self.rew_buf[self.ptr] = r.reshape(-1,1)
+        # self.obs_next_buf[self.ptr] = o_next
+        # self.ter_buf[self.ptr] = d.reshape(-1,1)
+        # self.ptr = (self.ptr+1) % self.max_size
+        # self.size = min(self.size+1, self.max_size)
+        n_steps = o.shape[0]
+        if self.ptr+n_steps > self.max_size:
+            self.ptr = 0
         self.obs_buf[self.ptr:self.ptr+n_steps] = o
         self.act_buf[self.ptr:self.ptr+n_steps] = a.reshape(-1,1)
         self.rew_buf[self.ptr:self.ptr+n_steps] = r.reshape(-1,1)
@@ -66,18 +72,18 @@ class NSRBuffer:
         self,
         obs_dim: int,
         max_size: int,
+        n_envs: int,
         batch_size: int = 32,
         n_steps: int = 1,
         gamma: float = 0.99,
-        seed = 0,
-        device = 'cpu'):
+        seed = 0, device = 'cpu'):
         self.obs_buf = np.zeros([max_size, obs_dim], dtype=np.float32)
         self.act_buf = np.zeros([max_size, 1], dtype=np.float32)
         self.rew_buf = np.zeros([max_size, 1], dtype=np.float32)
         self.obs_next_buf = np.zeros([max_size, obs_dim], dtype=np.float32)
         self.ter_buf = np.zeros([max_size, 1], dtype=np.float32)
-        self.ptr, self.size, self.max_size, self.batch_size = 0, 0, max_size, batch_size
-        self.n_steps, self.n_steps_buffer = n_steps, deque(maxlen=n_steps)
+        self.ptr, self.size, self.max_size, self.n_envs self.batch_size = 0, 0, max_size, n_envs, batch_size
+        self.n_steps, self.n_steps_buffer = n_steps, [ deque(maxlen=n_steps) for _ in range(n_envs) ]
         self.gamma = gamma
         self._device_ = device
 
@@ -87,7 +93,8 @@ class NSRBuffer:
         a: np.ndarray,
         r: float,
         o_next: np.ndarray,
-        d: bool) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, bool]:
+        d: bool,
+        mask: np.ndarray) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, bool]:
 
         sarsd = (o, a, r, o_next, d)
         self.n_steps_buffer.append(sarsd)
@@ -104,6 +111,26 @@ class NSRBuffer:
         self.ter_buf[self.ptr] = d
         self.ptr = (self.ptr+1) % self.max_size
         self.size = min(self.size+1, self.max_size)
+
+        # steps = o.shape[0]
+        for n in range(self.n_envs):
+            if self.ptr+1 > self.max_size:
+                self.ptr = 0
+
+            sarsd = (o[n], a[n], r[n], o_next[n], d[n])
+            self.n_steps_buffer[n].append(sarsd)
+
+            if len(self.n_steps_buffer[n]) >= self.n_steps:
+                o, a = self.n_steps_buffer[n][0][:2]
+                r, o_next, d = self._get_n_steps_info(self.n_steps_buffer[n], self.gamma)
+
+                self.obs_buf[self.ptr] = o
+                self.act_buf[self.ptr] = a
+                self.rew_buf[self.ptr] = r
+                self.obs_next_buf[self.ptr] = o_next
+                self.ter_buf[self.ptr] = d
+                self.ptr = (self.ptr+1) % self.max_size
+                self.size = min(self.size+1, self.max_size)
 
         return self.n_steps_buffer[0]
 
@@ -152,6 +179,7 @@ class PERBuffer(ReplayBuffer):
         self,
         obs_dim: int,
         max_size: int,
+        n_envs: int,
         batch_size: int = 32,
         alpha: float = 0.6,
         seed = 0,
@@ -171,13 +199,23 @@ class PERBuffer(ReplayBuffer):
         r: float,
         o_next: np.ndarray,
         d: bool) -> None:
-        super().store_sarsd(o, a, r, o_next, d)
-        self.sum_tree[self.tree_ptr] = self.max_priority ** self.alpha
-        self.min_tree[self.tree_ptr] = self.max_priority ** self.alpha
-        self.tree_ptr = (self.tree_ptr+1) % self.max_size
+        # super().store_sarsd(o, a, r, o_next, d)
+        # self.sum_tree[self.tree_ptr] = self.max_priority ** self.alpha
+        # self.min_tree[self.tree_ptr] = self.max_priority ** self.alpha
+        # self.tree_ptr = (self.tree_ptr+1) % self.max_size
+
+        steps = o.shape[0]
+        for i in range(steps):
+            print('tree_ptr: ', self.tree_ptr)
+            if self.tree_ptr+(steps-i) > self.max_size:
+                print('tree size max')
+                self.tree_ptr = 0
+            super().store_sarsd(o[i], a[i], r[i], o_next[i], d[i])
+            self.sum_tree[self.tree_ptr] = self.max_priority ** self.alpha
+            self.min_tree[self.tree_ptr] = self.max_priority ** self.alpha
+            self.tree_ptr = (self.tree_ptr+1) % self.max_size
 
     def sample_batch(self, batch_size: int = 32, beta: float = 0.4, device='cpu') -> Dict[str, np.ndarray]:
-        # print('batch_size: ', batch_size)
         idxs = self._sample_proportional_idxs(batch_size)
         batch = dict(idxs=idxs,
                      observations=self.obs_buf[idxs],
@@ -203,7 +241,7 @@ class PERBuffer(ReplayBuffer):
         idxs = []
         p_total = self.sum_tree.sum(0, len(self)-1)
         segment = p_total / batch_size
-        for bs in range(self.batch_size):
+        for bs in range(batch_size):
             a = segment*bs
             b = segment*(bs+1)
             up_bound = random.uniform(a, b)

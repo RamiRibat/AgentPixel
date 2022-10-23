@@ -14,50 +14,50 @@ configurations = {
     },
 
     'environment': {
-        'name': 'ALE/Pong-v5',
-        # 'name': 'ALE/breakout-v5',
-        'domain': 'atari',
-        'horizon': int(108e3),
-        'state': 'pixel',
+        'name': 'CartPole-v1',
+        'domain': 'gym',
+        'horizon': int(500),
+        'state': 'discrete',
         'action': 'discrete',
-        'vectorized': False,
+        'n-envs': 1,
     },
 
     'learning': {
-        'steps': int(2e6),
-        # 'epoch_steps': int(1e3),
-        'init_steps': int(32),
+        'steps': int(2e4),
+        'init_steps': int(128),
         'expl_steps': int(0),
-        'frequency': 1,
+        'frequency': 1, # iteration
         'grad_steps': 1,
         'render': False,
     },
 
     'evaluation': {
         'evaluate': True,
-        'frequency': int(1e5),
+        'frequency': 100, # iteration
         'episodes': 5,
         'render': False,
     },
 
     'algorithm': {
-        'name': 'Rainbow',
+        'name': 'RainbowVEC',
         # 'model': None,
         # 'on-policy': False,
         # 'model-based': False,
         'hyper-parameters': {
-            'n_steps': 1,
             'gamma': 0.99,
-            'init-epsilon': 1.0,
-            'max-epsilon': 1.0,
-            'min-epsilon': 0.1,
-            'epsilon-decay': 1/2000,
-            'target_update_frequency': 100,
+            'alpha': 0.2,
+            'beta': 0.6,
+            'prio-eps': 1e-6,
+            'v-min': 0.0, #
+            'v-max': 200.0,
+            'atom-size': 51,
+            'n-steps': 3,
+            'target_update_frequency': 100, # iteration
         }
     },
 
     'actor': {
-        'type': 'eps-greedy'
+        'type': 'greedy'
     },
 
     'critic': {
@@ -66,16 +66,15 @@ configurations = {
             'optimizer': 'Adam',
             'op_activation': 'Identity',
             'activation': 'ReLU',
-            'conv-arch': [512],
-            'mlp-arch': [128, 128],
-            'lr': 65e-5,
+            'arch': [128, 128],
+            'lr': 1e-3,
         }
     },
 
     'data': {
-        'buffer_type': 'simple',
-        'buffer_size': int(1e6),
-        'batch_size': 32,
+        'buffer_type': 'per+nSteps',
+        'buffer_size': int(1e4),
+        'batch_size': 128,
 
     }
 

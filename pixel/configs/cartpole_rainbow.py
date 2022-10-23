@@ -19,23 +19,15 @@ configurations = {
         'horizon': int(500),
         'state': 'discrete',
         'action': 'discrete',
-        # 'n-envs': 0,
-        # 'n-envs': 1,
-        'n-envs': 2,
-        # 'n-envs': 4,
-        # 'n-envs': 8,
-        # 'n-envs': 16,
-        # 'n-envs': 32,
-        # 'n-envs': 64,
+        'vectorized': False,
     },
 
     'learning': {
-        'steps': int(2e4),
-        # 'epoch_steps': int(1e3),
-        'init_steps': int(128),
-        'expl_steps': int(0),
+        'total-steps': int(2e4),
+        'init-steps': int(256),
+        'expl-steps': int(256),
         'frequency': 1,
-        'grad_steps': 1,
+        'grad-steps': 1,
         'render': False,
     },
 
@@ -52,15 +44,22 @@ configurations = {
         # 'on-policy': False,
         # 'model-based': False,
         'hyper-parameters': {
-            'gamma': 0.99,
-            'alpha': 0.2,
-            'beta': 0.6,
-            'prio-eps': 1e-6,
-            'v-min': 0.0, #
-            'v-max': 200.0,
-            'atom-size': 51,
+            'history': 1,
             'n-steps': 3,
-            'target_update_frequency': 100,
+            'gamma': 0.99,
+            # 'alpha': 0.2,
+            'omega': 0.2, # prio-exponent
+            'beta': 0.6, # prio-weight
+            'prio-eps': 1e-6,
+            'v-min': 0.0,
+            'v-max': 200.0,
+            # 'omega': 0.5, # prio-exponent
+            # 'beta': 0.4, # prio-weight
+            # 'prio-eps': 1e-6,
+            # 'v-min': -10.0, #
+            # 'v-max': 10.0,
+            'atom-size': 51,
+            'target-update-frequency': 100,
         }
     },
 
@@ -80,9 +79,14 @@ configurations = {
     },
 
     'data': {
-        'buffer_type': 'per+nSteps',
-        'buffer_size': int(1e4),
-        'batch_size': 128,
+        # 'buffer_type': 'per+nSteps',
+        'obs-type': 'numerical',
+        # 'buffer-type': 'nStepsPER',
+        'buffer-type': 'PER',
+        'buffer-size': int(1e4),
+        'capacity': int(1e4),
+        'batch-size': 64,
+        # 'batch-size': 128,
 
     }
 
