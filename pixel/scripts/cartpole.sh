@@ -21,6 +21,8 @@ echo "RL Experiments w/ Bash"
 python -m pixel.run -cfg cartpole_rainbow -seed 1 -wb
 python -m pixel.run -cfg cartpole_rainbow -seed 2 -wb
 python -m pixel.run -cfg cartpole_rainbow -seed 3 -wb
+python -m pixel.run -cfg cartpole_rainbow -seed 4 -wb
+python -m pixel.run -cfg cartpole_rainbow -seed 5 -wb
 
 # Vectorized
 

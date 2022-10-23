@@ -299,7 +299,7 @@ def main(exp_prefix, config, seed, device, wb):
     env_name = 'CP1' #configs['environment']['name']
     env_domain = configs['environment']['domain']
 
-    group_name = f"{env_name}-{alg_name}-11" # H < -2.7
+    group_name = f"{env_name}-{alg_name}-12" # H < -2.7
     exp_prefix = f"seed:{seed}"
     # print('group: ', group_name)
 
