@@ -46,7 +46,7 @@ configurations = {
         # 'eval-freq': int(1e5),
         # 'episodes': 10,
         # 'eval-freq': int(1e5),
-        'eval-freq': int(1e3), # iteration
+        'eval-freq': int(1e3), # iteration X n-envs
         'episodes': 5,
         'render': False,
     },
@@ -60,14 +60,13 @@ configurations = {
             'history': 4,
             'n-steps': 3,
             'gamma': 0.99,
-            # 'alpha': 0.2,
             'omega': 0.5, # prio-exponent
             'beta': 0.4, # prio-weight
             'prio-eps': 1e-6,
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            'target-update-frequency': int(1e3),
+            'target-update-frequency': int(200),
             # 'target-update-frequency': int(8e3),
         }
     },
