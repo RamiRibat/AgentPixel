@@ -1,11 +1,14 @@
 import psutil
+import argparse
 
+import numpy as np
 import gym
 
-# from pixel.data.buffers import ReplayBuffer, PERBuffer, NSRBuffer, NSPERBuffer
+from pixel.envs.make import GymMaker
+# from pixel.data.memory import PixelPER
+# from pixel.data.buffers import ReplayBuffer, PERBuffer, NSRBuffer
 
 from pixel.data.mem import GeneralReplay
-
 
 
 
@@ -14,9 +17,8 @@ class MFRL:
     """
     Model-Free Reinforcement Learning
     """
-    def __init__(self, exp_prefix, configs, seed, device):
-        print('init MFRL!')
-        self.exp_prefix = exp_prefix
+    def __init__(self, configs, seed, device):
+        # print('Initialize MFRL!')
         self.configs = configs
         self.seed = seed
         self._device_ = device
@@ -26,33 +28,31 @@ class MFRL:
         self._set_buffer()
 
     def _set_env(self):
-        def seed_env(env):
-            # env.seed(self.seed)
-            env.action_space.seed(self.seed)
-            env.observation_space.seed(self.seed)
-            env.reset(seed=self.seed)
-        env_name = self.configs['environment']['name']
-        evaluate = self.configs['evaluation']['evaluate']
-        self.learn_env = gym.make(env_name)
-        seed_env(self.learn_env)
-        if evaluate:
-            self.eval_env = gym.make(env_name)
-            seed_env(self.eval_env)
-        self.obs_dim = self.learn_env.observation_space.shape[0] # Continous S
-        self.act_dim = self.learn_env.action_space.n # Discrete A
-        self.env_horizon = self.learn_env.spec.max_episode_steps
+        env_cfgs = self.configs['environment']
+
+        self.learn_env = GymMaker(env_cfgs)
+        if self.configs['evaluation']['evaluate']:
+            self.eval_env = GymMaker(env_cfgs, eval=True)
+
+        self.obs_dim = self.learn_env.observation_dim
+        self.act_dim = self.learn_env.action_dim
+        # self.max_frames = self.learn_env.spec.max_frames_per_episode
 
     def _set_buffer(self):
+        n_envs = self.configs['environment']['n-envs']
         obs_dim, act_dim = self.obs_dim, self.act_dim
         self.buffer = GeneralReplay(
+            n_envs=n_envs,
             obs_dim=obs_dim,
             act_dim=act_dim,
             configs=self.configs['data'],
             hyper_para=self.configs['algorithm']['hyper-parameters'])
 
-        # max_size = self.configs['data']['buffer_size']
-        # batch_size = self.configs['data']['batch_size']
-        # buffer_type = self.configs['data']['buffer_type']
+        # buffer_cfgs = self.configs['data']
+        # # buffer_size = self.configs['data']['buffer-size']
+        # # batch_size = self.configs['data']['batch-size']
+        # buffer_type = self.configs['data']['buffer-type']
+        # hyper_para = self.configs['algorithm']['hyper-parameters']
         # if buffer_type == 'simple':
         #     self.buffer = ReplayBuffer(obs_dim, max_size, batch_size)
         # elif buffer_type == 'per':
@@ -62,55 +62,106 @@ class MFRL:
         #     n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
         #     self.buffer = NSRBuffer(obs_dim, max_size, batch_size, n_steps=1)
         #     self.buffer_n = NSRBuffer(obs_dim, max_size, batch_size, n_steps=n_steps)
-        # elif buffer_type == 'per+nSteps':
+        # elif buffer_type == 'per+nSteps': # Rainbow
         #     alpha = self.configs['algorithm']['hyper-parameters']['alpha']
         #     n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
         #     self.buffer_per = PERBuffer(obs_dim, max_size, batch_size, alpha)
         #     self.buffer_n = NSRBuffer(obs_dim, max_size, batch_size, n_steps=n_steps)
-        # elif buffer_type == 'nStepsPER':
-        #     n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
-        #     gamma = self.configs['algorithm']['hyper-parameters']['gamma']
-        #     alpha = self.configs['algorithm']['hyper-parameters']['alpha']
-        #     self.buffer = NSPERBuffer(
-        #                     obs_dim=obs_dim,
-        #                     obs_dim=obs_dim,
-        #                     max_size=max_size,
-        #                     n_steps=n_steps,
-        #                     batch_size=batch_size,
-        #                     gamma=gamma,
-        #                     alpha=alpha)
+        # elif buffer_type == 'pixel-simple': # DQN
+        #     self.buffer = PixelER(buffer_cfgs, hyper_para, device=self._device_)
+        # elif buffer_type == 'pixel-per': # Rainbow
+        #     self.buffer = PixelPER(buffer_cfgs, hyper_para, device=self._device_)
 
-
-
-    def interact(self, observation, Z, L, t, Traj, epsilon=0.001):
+    def interact(self, observation, mask, Z, L, t, Traj, epsilon=0.001):
+        n_envs = self.configs['environment']['n-envs']
+        n_stacks = self.configs['environment']['n-stacks']
         xT = self.configs['learning']['expl-steps']
+
+        if mask.sum() == 0:
+            Z, S, L, Traj = 0, 0, 0, Traj+1
+            observation, info = self.learn_env.reset()
+            mask = np.ones([max(1, n_envs)], dtype=bool)
+
         if t > xT:
             action = self.agent.get_action(observation, epsilon=epsilon)
         else:
             action = self.learn_env.action_space.sample()
 
+        # print('observation: ', observation.shape)
+        # print('action: ', action)
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
-        # print(f'terminated:{terminated} | truncated:{truncated}')
-        self.buffer.append_sard(observation, action, reward, terminated)
-        # self.store_sarsd_in_buffer(observation, action, reward, observation_next, terminated)
+        # print('reward: ', reward)
+        # print('terminated: ', terminated)
+
+        if self.configs['environment']['n-envs'] == 0:
+            observation = np.array([observation])
+            action = np.array([action])
+            reward = np.array([reward])
+            terminated = np.array([terminated])
+            truncated = np.array([truncated])
+
+        self.append_sard_in_buffer(
+            observation[mask],
+            action[mask],
+            reward[mask],
+            terminated[mask])
+
         observation = observation_next
-        Z += reward
+        mask[mask] = ~terminated[mask]
+        mask[mask] = ~truncated[mask]
+
+        # print('mask: ', mask)
+
+        Z += np.mean(reward)
         L += 1
-        if terminated or truncated:
+
+        return observation, mask, Z, L, Traj
+
+    def interact_vec(self, observation, mask, Z, L, T, Traj, epsilon=0.001):
+        # print('interact_vec')
+        # print('mask: ', mask)
+        n_envs = self.configs['environment']['n-envs']
+        xT = self.configs['learning']['expl-steps']
+
+        if T > xT:
+            action = self.agent.get_action(observation, epsilon=epsilon)
+        else:
+            action = self.learn_env.action_space.sample()
+
+        observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
+        self.buffer.append_sard_vec(observation, action, reward, terminated, mask)
+
+        if self.configs['environment']['n-envs'] == 0:
+            observation = np.array([observation])
+            action = np.array([action])
+            reward = np.array([reward])
+            terminated = np.array([terminated])
+            truncated = np.array([truncated])
+
+        Z += np.mean(reward[mask])
+        L += mask.sum()
+        steps = mask.sum()
+
+        observation = observation_next
+        mask[mask] = ~terminated[mask]
+        mask[mask] = ~truncated[mask]
+
+        if mask.sum()==0:
             # print('env.reset')
             Z, S, L, Traj = 0, 0, 0, Traj+1
             observation, info = self.learn_env.reset()
-        return observation, Z, L, Traj
+            mask = np.ones([max(1, n_envs)], dtype=bool)
 
-    def store_sarsd_in_buffer(
+        return observation, mask, Z, L, Traj, steps
+
+    def append_sard_in_buffer(
         self,
         observation,
         action,
         reward,
-        observation_next,
         terminated):
 
-        buffer_type = self.configs['data']['buffer_type']
+        buffer_type = self.configs['data']['buffer-type']
         if (buffer_type == 'simple') or (buffer_type == 'per'):
             self.buffer.store_sarsd(observation,
                                     action,
@@ -129,27 +180,18 @@ class MFRL:
                                       observation_next,
                                       terminated)
         elif buffer_type == 'per+nSteps':
-            sarsd = self.buffer_n.store_sarsd(
-                                observation,
-                                action,
-                                reward,
-                                observation_next,
-                                terminated)
-            # if sarsd:
-            #     observation, action, reward, observation_next, terminated = sarsd
-            self.buffer_per.store_sarsd(
-                                observation,
-                                action,
-                                reward,
-                                observation_next,
-                                terminated)
-        elif buffer_type == 'nStepsPER':
-            self.buffer.store_sarsd(
-                                observation,
-                                action,
-                                reward,
-                                observation_next,
-                                terminated)
+            self.buffer_per.store_sarsd(observation,
+                                    action,
+                                    reward,
+                                    observation_next,
+                                    terminated)
+            self.buffer_n.store_sarsd(observation,
+                                      action,
+                                      reward,
+                                      observation_next,
+                                      terminated)
+        elif buffer_type == 'pixel-per':
+            self.buffer.append_sard(observation, action, reward, terminated)
 
     def evaluate(self):
         evaluate = self.configs['evaluation']['evaluate']

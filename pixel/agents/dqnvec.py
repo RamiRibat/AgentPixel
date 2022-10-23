@@ -122,7 +122,7 @@ class DQNLearner(MFRL):
         # DQNLT = trange(kwargs=kwargs)
         observation, info = self.learn_envs.reset()
         mask = np.ones([num_envs], dtype=bool)
-        # non_truncated = np.ones([num_envs], dtype=bool)
+        non_truncated = np.ones([num_envs], dtype=bool)
         logs, ZList, LList, JQList = dict(), [0], [0], []
         termZ, termL = 0, 0
         # EPS = []

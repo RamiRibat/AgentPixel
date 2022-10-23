@@ -7,14 +7,7 @@ from typing import Dict
 import numpy as np
 import torch as T
 
-# blank_sard = (0, np.zeros((84,84), dtype=np.uint8), 0, 0.0, False)
-# sard_dtype = np.dtype([
-#     ('t', np.int32),
-#     ('observation', np.uint8, (84,84)),
-#     ('action', np.int32),
-#     ('reward', np.float32),
-#     ('terminal', np.bool_),
-# ])
+
 
 def sard(obs_type, obs_dim, act_dim):
     if obs_type == 'pixel':
@@ -37,26 +30,6 @@ def sard(obs_type, obs_dim, act_dim):
         ])
     return dict(blank=blank_sard, dtype=sard_dtype)
 
-# def torch_sard(obs_type, obs_dim, act_dim):
-#     if obs_type == 'pixel':
-#         blank_sard = (0, T.zeros((84,84), dtype=T.float32), 0, 0.0, False)
-#         sard_dtype = T.dtype([
-#             ('t', T.int32),
-#             ('observation', T.float32, (84,84)),
-#             ('action', T.int32),
-#             ('reward', T.float32),
-#             ('terminal', T.bool),
-#         ])
-#     elif obs_type == 'numerical':
-#         blank_sard = (0, T.zeros((obs_dim), dtype=T.float32), 0, 0.0, False)
-#         sard_dtype = T.dtype([
-#             ('t', T.int32),
-#             ('observation', T.float32, (obs_dim)),
-#             ('action', T.int32),
-#             ('reward', T.float32),
-#             ('terminal', T.bool),
-#         ])
-#     return dict(blank=blank_sard, dtype=sard_dtype)
 
 
 
@@ -195,9 +168,11 @@ class SegmentTree: # Done
 class GeneralReplay: # Done
     def __init__(
         self,
+        n_envs,
         obs_dim, act_dim,
         configs, hyper_para,
         seed = 0, device = 'cpu'):
+        self.n_envs = n_envs
         self.SARD = sard(configs['obs-type'], obs_dim, act_dim)
         self.configs, self.hyper_para, self.seed, self._device_ = configs, hyper_para, seed, device
         self.capacity, self.batch_size = configs['capacity'], configs['batch-size']
@@ -206,8 +181,8 @@ class GeneralReplay: # Done
         if configs['buffer-type'] == 'PER':
             self.omega, self.beta = hyper_para['omega'], hyper_para['beta']
             self.transitions = SegmentTree(self.capacity, self.SARD)
-        # else:
-        #     self.transitions = Buffer(self.capacity, self.SARD)
+        else:
+            self.transitions = Buffer(self.capacity, self.SARD)
         self.t = 0
 
     def size(self) -> int:
@@ -226,6 +201,16 @@ class GeneralReplay: # Done
         # else:
         #     self.transitions.append(sard)
         self.t = 0 if d else self.t+1
+
+    def append_sard_vec(self, s, a, r, d, mask) -> None: # Done
+        for i in range(self.n_envs):
+            if mask[i]:
+                sard = (self.t, s[i][-1], a[i], r[i], d[i]) if self.history > 1 else (self.t, s[i], a[i], r[i], d[i])
+                if self.configs['buffer-type'] == 'PER':
+                    self.transitions.append(sard, self.transitions.max)
+                else:
+                    self.transitions.append(sard)
+        self.t = 0 if np.all(d) else self.t+1
 
     def sample_batch(self, batch_size) -> Dict: # Done
         # print('sample_batch')

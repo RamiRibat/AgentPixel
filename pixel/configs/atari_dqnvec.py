@@ -14,13 +14,16 @@ configurations = {
     },
 
     'environment': {
-        'name': 'ALE/pong-v5',
-        # 'name': 'ALE/breakout-v5',
+        # 'name': 'ALE/Asterix-v5',
+        # 'name': 'ALE/Boxing-v5',
+        # 'name': 'ALE/Breakout-v5',
+        'name': 'ALE/Pong-v5',
         'domain': 'atari',
         'horizon': int(108e3),
         'state': 'pixel',
         'action': 'discrete',
-        'vectorized': False,
+        # 'vectorized': False,
+        'vectorized': True,
     },
 
     'learning': {

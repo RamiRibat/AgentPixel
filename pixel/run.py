@@ -1,9 +1,9 @@
-import os, subprocess, sys
+from copy import deepcopy
+from multiprocessing import Process, Pool
+import os, sys, subprocess#, multiprocessing
 import argparse
 import importlib
-import datetime
-import random
-# import pprint
+import time
 import json
 
 import numpy as np
@@ -15,72 +15,122 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-def main(cfg, seed, device, wb):
-    sys.path.append("pixel/configs")
-    config = importlib.import_module(cfg)
-    configurations = config.configurations
-
-    alg_name = configurations['algorithm']['name']
-    env_name = configurations['environment']['name']
-    env_domain = configurations['environment']['domain']
-
-    group_name = f"{env_domain}-{env_name}"
-    exp_prefix = f"{group_name}-{alg_name}-seed:{seed}"
-
-    print('=' * 50)
-    print(f'Start of an RL experiment')
-    print(f"\t Algorithm:   {alg_name}")
-    print(f"\t Environment: {env_name}")
-    print(f"\t Random seed: {seed}")
-    print('=' * 50)
-
-    # print('Configurations:\n', configurations)
-    print('Configurations:\n', json.dumps(configurations, indent=4, sort_keys=False))
-
+def find_agent(alg):
     cwd = os.getcwd()
     agent_dir = cwd + '/pixel/agents/'
-    # print('alg_name.lower(): ', alg_name.lower())
-
     for root, dirs, files in os.walk(agent_dir):
         for f in files:
-            if f == (alg_name.lower() + '.py'):
+            if f == (alg.lower() + '.py'):
                 agent = os.path.join(root, f)
+    return agent
+
+def experiment_grid(args):
+    exp_grid = []
+    info = {}
+    for alg in args.alg:
+        agent = find_agent(alg)
+        configs = args.task.lower() + '_' + alg.lower()
+        info['alg'] = alg
+        for env in args.env:
+            info['env'] = env
+            for n in args.n_envs:
+                info['n'] = n
+                exp_grid.append([agent, configs, deepcopy(info)])
+    return exp_grid
 
 
-    subprocess.run(['python', agent,
-                    '-exp_prefix', exp_prefix,
-                    '-cfg', cfg,
-                    '-seed', str(seed),
-                    '-device', device,
-                    '-wb', str(wb) ])
 
 
-    print('\n')
-    print('End of the RL experiment')
-    print('=' * 50)
+def work(processes_list):
+    return subprocess.run(processes_list)
+
+def process_work(seeds, processes_list):
+    pool = Pool(processes=len(seeds)+1)
+    pool.map(work, processes_list)
+
+
+
+
+
+
+def main(external_args):
+    exp_grid = experiment_grid(external_args)
+    for (agent, configs, info) in exp_grid:
+        print('=' * 50)
+        print(f'Start of an RL experiment')
+        print(f"\t Algorithm:   {info['alg']}")
+        print(f"\t Environment: {info['env']} X {info['n']}")
+        for seed in external_args.seed:
+            print(f"\t Random seed: {seed}")
+            print('=' * 50)
+
+            subprocess.run(['python', agent,
+                            '--env', info['env'],
+                            '--n-env', str(info['n']),
+                            '--configs', str(configs),
+                            '--seed', str(seed),
+                            '--device', external_args.device,
+                            '--wb', str(external_args.wb) ])
+
+        print('\n')
+        print('End of the RL experiment')
+        print('=' * 50)
+
+
+# def main2(external_args):
+#     exp_grid = experiment_grid(external_args)
+#     for (agent, configs, info) in exp_grid:
+#         seeds = external_args.seed
+#         device = external_args.device
+#         wb = external_args.wb
+#         print('=' * 50)
+#         print(f'Start of an RL experiment')
+#         print(f"\t Algorithm:   {info['alg']}")
+#         print(f"\t Environment: {info['env']} X {info['n']}")
+#         print(f"\t Random seed(s): {seeds}")
+#         print('=' * 50)
+#         works_vars = [ [agent, configs, info, seed, device, wb] for seed in seeds]
+#
+#         work_processes = [ [
+#             'python', agent,
+#             '--configs', str(configs),
+#             '--env', info['env'],
+#             '--n-env', str(info['n']),
+#             '--seed', str(seed),
+#             '--device', device,
+#             '--wb', str(wb)
+#             ] for seed in seeds ]
+#         monitor_process = ['python',  os.getcwd() + '/pixel/utils/monitor.py']
+#         work_processes.append(monitor_process)
+#
+#         process_work(seeds, work_processes)
+#
+#             # subprocess.run(['python', agent,
+#             #                 '--env', info['env'],
+#             #                 '--n-env', str(info['n']),
+#             #                 '--configs', str(configs),
+#             #                 '--seed', str(seed),
+#             #                 '--device', external_args.device,
+#             #                 '--wb', str(external_args.wb) ])
+#
+#         print('\n')
+#         print('End of the RL experiment')
+#         print('=' * 50)
+#
+
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-cfg', type=str)
-    parser.add_argument('-seed', type=int, default=0)
-    parser.add_argument('-device', type=str, default='cpu')
-    parser.add_argument('-wb', action='store_true')
+    parser.add_argument('--task', type=str, default='Atari')
+    parser.add_argument('--alg', type=str, nargs='+', default=['Rainbow'])
+    parser.add_argument('--env', type=str, nargs='+', default=['ALE/Pong-v5'])
+    parser.add_argument('--n-envs', type=int, nargs='+', default=[0])
+    parser.add_argument('--seed', type=int, nargs='+', default=[0])
+    parser.add_argument('--device', type=str, default='cpu')
+    parser.add_argument('--wb', action='store_true')
 
-    args = parser.parse_args()
+    external_args = parser.parse_args()
 
-    cfg = args.cfg
-    seed = args.seed
-    # device = 'cuda' if args.gpu else 'cpu'
-    device = args.device
-    wb = args.wb
-
-    # if seed:
-    #     print('seeding')
-    #     random.seed(seed), np.random.seed(seed), T.manual_seed(seed)
-
-
-    main(cfg, seed, device, wb)
+    main(external_args)

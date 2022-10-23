@@ -29,10 +29,10 @@ configurations = {
     },
 
     'learning': {
-        # 'total-steps': int(50e2), # 50e6 steps X4 = 200e6 frames
-        # 'init-steps': int(20e1),
-        'total-steps': int(50e6), # 50e6 steps X4 = 200e6 frames
-        'init-steps': int(20e3),
+        'total-steps': int(50e2), # 50e6 steps X4 = 200e6 frames
+        'init-steps': int(20e1),
+        # 'total-steps': int(50e6), # 50e6 steps X4 = 200e6 frames
+        # 'init-steps': int(20e3),
         'expl-steps': int(0),
         'learn-freq': 4,
         'grad-steps': 1,
@@ -42,10 +42,10 @@ configurations = {
 
     'evaluation': {
         'evaluate': True,
+        'eval-freq': int(5e2),
+        'episodes': 1,
         # 'eval-freq': int(1e5),
         # 'episodes': 10,
-        'eval-freq': int(1e5),
-        'episodes': 10,
         'render': False,
     },
 
@@ -65,8 +65,8 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            # 'target-update-frequency': int(8e1),
-            'target-update-frequency': int(8e3),
+            'target-update-frequency': int(8e1),
+            # 'target-update-frequency': int(8e3),
         }
     },
 
@@ -101,8 +101,9 @@ configurations = {
     },
 
     'data': {
+        'obs-type': 'pixel',
         # 'buffer-type': 'per+nSteps',
-        'buffer-type': 'pixel-per',
+        'buffer-type': 'PER',
         'capacity': int(1e6),
         'batch-size': 32,
     }

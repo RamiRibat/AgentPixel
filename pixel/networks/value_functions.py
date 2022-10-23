@@ -3,7 +3,7 @@
 import torch as T
 nn, F = T.nn, T.nn.functional
 
-from pixel.networks.dnns import Network, NoisyNetwork
+from pixel.networks.dnns import Network, NoisyNetwork, Encoder
 
 
 class QNetwork(nn.Module):
@@ -23,17 +23,37 @@ class QNetwork(nn.Module):
 
 
 class NDCQNetwork(nn.Module):
-    def __init__(self, obs_dim, act_dim, atom_size, v_min, v_max, net_configs, seed, device):
-        print('Initialize NDCQNetwork')
+    def __init__(
+        self,
+        obs_dim, act_dim,
+        configs, hyper_para,
+        seed = 0, device='cpu'):
+        # print('Initialize NDCQNetwork')
         super(NDCQNetwork, self).__init__()
-        optimizer, lr = 'T.optim.' + net_configs['optimizer'], net_configs['lr']
-        self.act_dim, self.atom_size = act_dim, atom_size
-        self.support = support = T.linspace(v_min, v_max, atom_size)
-        self.feature_layer = nn.Sequential(nn.Linear(obs_dim, 128), nn.ReLU())
-        self.v_net = NoisyNetwork(128, 1*atom_size, net_configs)
-        self.adv_net = NoisyNetwork(128, act_dim*atom_size, net_configs)
+
+        optimizer = 'T.optim.' + configs['optimizer']['type']
+        lr = configs['optimizer']['lr']
+        eps = configs['optimizer']['eps']
+        # norm_clip = configs['optimizer']['norm-clip']
+
+        self.act_dim, self.atom_size = act_dim, hyper_para['atom-size']
+        self.support = T.linspace(
+                            hyper_para['v-min'],
+                            hyper_para['v-max'],
+                            hyper_para['atom-size']).to(device)
+
+        if obs_dim == 'pixel':
+            self.feature_layer = Encoder(hyper_para['history'], configs['encoder'])
+            self.feature_dim = self.feature_layer.feature_dim
+        else:
+            self.feature_layer = nn.Sequential(nn.Linear(obs_dim, configs['mlp']['arch'][0]), nn.ReLU())
+            self.feature_dim = configs['mlp']['arch'][0]
+        self.v_net = NoisyNetwork(self.feature_dim, 1*self.atom_size, configs['mlp'])
+        self.adv_net = NoisyNetwork(self.feature_dim, self.act_dim*self.atom_size, configs['mlp'])
+        # print('NDCQNetwork: ', self)
         self.to(device)
-        self.optimizer = eval(optimizer)(self.parameters(), lr)
+
+        self.optimizer = eval(optimizer)(self.parameters(), lr=lr, eps=eps)
 
     def forward(self, observation: T.Tensor) -> T.Tensor:
         distribution = self.distribution(observation)
@@ -57,16 +77,16 @@ class NDCQNetwork(nn.Module):
 
 
 
-
-class SoftQNetworks(nn.Module):
-    def __init__(self, obs_dim, act_dim, net_configs, seed, device):
-        super(QNetwork, self).__init__()
-        optimizer, lr = 'T.optim.' + net_configs['optimizer'], net_configs['lr']
-        self.q1 = Network(obs_dim, act_dim, net_configs)
-        self.q2 = Network(obs_dim, act_dim, net_configs)
-        self.QNets = [self.q1, self.q2]
-        self.to(device)
-        self.optimizer = eval(optimizer)(self.parameters(), lr)
-
-    def forward(self, observation):
-        return tuple(Q(observation) for Q in self.QNets)
+#
+# class SoftQNetworks(nn.Module):
+#     def __init__(self, obs_dim, act_dim, net_configs, seed, device):
+#         super(QNetwork, self).__init__()
+#         optimizer, lr = 'T.optim.' + net_configs['optimizer'], net_configs['lr']
+#         self.q1 = Network(obs_dim, act_dim, net_configs)
+#         self.q2 = Network(obs_dim, act_dim, net_configs)
+#         self.QNets = [self.q1, self.q2]
+#         self.to(device)
+#         self.optimizer = eval(optimizer)(self.parameters(), lr)
+#
+#     def forward(self, observation):
+#         return tuple(Q(observation) for Q in self.QNets)
