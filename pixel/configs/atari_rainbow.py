@@ -101,8 +101,11 @@ configurations = {
     },
 
     'data': {
+        'obs-type': 'pixel',
+        # 'buffer-type': 'nStepsPER',
+        'buffer-type': 'PER',
         # 'buffer-type': 'per+nSteps',
-        'buffer-type': 'pixel-per',
+        # 'buffer-type': 'pixel-per',
         'capacity': int(1e6),
         'batch-size': 32,
     }
