@@ -198,8 +198,8 @@ class GeneralReplay: # Done
             self.transitions.append(sard, self.transitions.max)
             # print('data: ', self.transitions.data[:100])
             # print('sum_tree: ', self.transitions.sum_tree[:100])
-        # else:
-        #     self.transitions.append(sard)
+        else:
+            self.transitions.append(sard)
         self.t = 0 if d else self.t+1
 
     def append_sard_vec(self, s, a, r, d, mask) -> None: # Done

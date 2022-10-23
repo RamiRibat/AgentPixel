@@ -46,7 +46,8 @@ class MFRL:
             obs_dim=obs_dim,
             act_dim=act_dim,
             configs=self.configs['data'],
-            hyper_para=self.configs['algorithm']['hyper-parameters'])
+            hyper_para=self.configs['algorithm']['hyper-parameters'],
+            seed=self.seed, device=self._device_)
 
         # buffer_cfgs = self.configs['data']
         # # buffer_size = self.configs['data']['buffer-size']
