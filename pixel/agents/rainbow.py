@@ -161,8 +161,7 @@ class RainbowLearner(MFRL):
                     logs['time/sps-avg                        '] = np.mean(SPSList)
                     logs['time/total-real                     '] = total_time_real
                     RainbowLT.set_postfix({'S/S': sps, 'LZ': np.mean(ZList), 'VZ': np.mean(VZ)})
-                    if self.WandB:
-                        wandb.log(logs, step=T)
+                    if self.WandB: wandb.log(logs, step=T)
                 I += 1
 
 
@@ -183,8 +182,7 @@ class RainbowLearner(MFRL):
         logs['time/sps                            '] = sps
         logs['time/sps-avg                        '] = np.mean(SPSList)
         logs['time/total-real                     '] = total_time_real
-        if self.WandB:
-            wandb.log(logs, step=T)
+        if self.WandB: wandb.log(logs, step=T)
 
         self.learn_env.close()
         self.eval_env.close()

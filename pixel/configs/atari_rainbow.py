@@ -66,7 +66,7 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            # 'target-update-frequency': int(1e3),
+            'target-update-frequency': int(1e3),
             # 'target-update-frequency': int(8e3),
         }
     },
