@@ -144,13 +144,14 @@ class RainbowLearner(MFRL):
                 if (I%Vf==0):
                     cur_time_real = time.time()
                     total_time_real = cur_time_real - start_time_real
-                    sps = T//total_time_real
+                    sps = T/total_time_real
                     SPSList.append(sps)
                     self.agent._evaluation_mode(True), self.agent.online_net.eval()
                     VZ, VS, VL = self.evaluate()
                     self.agent._evaluation_mode(False), self.agent.online_net.train()
                     logs['data/env_buffer_size                '] = self.buffer.size()
-                    # logs['training/rainbow/Jq                 '] = Jq
+                    logs['training/rainbow/Jq                 '] = Jq
+                    logs['training/rainbow/beta               '] = self.buffer.beta
                     logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
                     logs['learning/real/rollout_return_std    '] = np.std(ZList)
                     logs['learning/real/rollout_length        '] = np.mean(LList)
@@ -166,13 +167,14 @@ class RainbowLearner(MFRL):
 
 
         total_time_real = cur_time_real - start_time_real
-        sps = T//total_time_real
+        sps = T/total_time_real
         SPSList.append(sps)
         self.agent._evaluation_mode(True), self.agent.online_net.eval()
         VZ, VS, VL = self.evaluate()
         self.agent._evaluation_mode(False), self.agent.online_net.train()
         logs['data/env_buffer_size                '] = self.buffer.size()
-        # logs['training/rainbow/Jq                 '] = Jq # np.mean(JQList)
+        logs['training/rainbow/Jq                 '] = Jq
+        logs['training/rainbow/beta               '] = self.buffer.beta
         logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
         logs['learning/real/rollout_return_std    '] = np.std(ZList)
         logs['learning/real/rollout_length        '] = np.mean(LList)

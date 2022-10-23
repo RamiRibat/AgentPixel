@@ -196,8 +196,6 @@ class GeneralReplay: # Done
         sard = (self.t, s[-1], a, r, d) if self.history > 1 else (self.t, s, a, r, d)
         if self.configs['buffer-type'] == 'PER':
             self.transitions.append(sard, self.transitions.max)
-            # print('data: ', self.transitions.data[:100])
-            # print('sum_tree: ', self.transitions.sum_tree[:100])
         else:
             self.transitions.append(sard)
         self.t = 0 if d else self.t+1
@@ -213,9 +211,7 @@ class GeneralReplay: # Done
         self.t = 0 if np.all(d) else self.t+1
 
     def sample_batch(self, batch_size) -> Dict: # Done
-        # print('sample_batch')
         if self.configs['buffer-type'] == 'PER':
-            # print('sample_batch(PER)')
             total_prios = self.transitions.total()
             segment_batch = self._sample_batch_from_segments(batch_size, total_prios)
             probs = segment_batch['probs'] / total_prios
@@ -229,8 +225,8 @@ class GeneralReplay: # Done
             			 observations_next=segment_batch['observations_next'],
             			 terminals=segment_batch['terminals'],
                          importance_ws=weights_normz)
-        # else:
-        #     batch = self._sample_batch_from_buffer(buffer_size)
+        else:
+            batch = self._sample_batch_from_buffer(buffer_size)
         return batch
 
     def _sample_batch_from_buffer(self, batch_size): # Done
@@ -283,7 +279,6 @@ class GeneralReplay: # Done
         actions = T.tensor(np.copy(transitions['action'][:, self.history-1]), dtype=T.int64, device=self._device_).view(-1,1)
         rewards = T.tensor(np.copy(transitions['reward'][:, self.history-1:-1]), dtype=T.float32, device=self._device_)
         returns = T.matmul(rewards, self.gamma_n).view(-1,1)
-        # terminals = T.tensor(np.expand_dims(transitions['terminal'][:, self.history+self.n_steps-1], axis=1), dtype=T.float32, device=self._device_)
         terminals = T.tensor(np.copy(transitions['terminal'][:, self.history+self.n_steps-1]), dtype=T.float32, device=self._device_).view(-1,1)
         batch = dict(
             probs=probs,

@@ -139,8 +139,8 @@ class MFRL:
             terminated = np.array([terminated])
             truncated = np.array([truncated])
 
-        Z += np.mean(reward[mask])
-        L += mask.sum()
+        Z += reward[mask].sum() / n_envs
+        L += mask.sum() / n_envs
         steps = mask.sum()
 
         observation = observation_next

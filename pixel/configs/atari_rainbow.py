@@ -33,8 +33,9 @@ configurations = {
         # 'init-steps': int(20e1),
         'total-steps': int(50e6), # 50e6 steps X4 = 200e6 frames
         'init-steps': int(20e3),
-        'expl-steps': int(0),
-        'learn-freq': 4, # iteration
+        'expl-steps': int(10e3),
+        # 'learn-freq': 4, # iteration
+        'learn-freq': 1, # iteration
         'grad-steps': 1,
         'log-freq': 0,
         'render': False,
@@ -45,8 +46,8 @@ configurations = {
         # 'eval-freq': int(1e5),
         # 'episodes': 10,
         # 'eval-freq': int(1e5),
-        'eval-freq': int(2e2), # iteration
-        'episodes': 10,
+        'eval-freq': int(1e3), # iteration
+        'episodes': 5,
         'render': False,
     },
 
@@ -103,12 +104,10 @@ configurations = {
 
     'data': {
         'obs-type': 'pixel',
-        # 'buffer-type': 'nStepsPER',
         'buffer-type': 'PER',
-        # 'buffer-type': 'per+nSteps',
-        # 'buffer-type': 'pixel-per',
         'capacity': int(1e6),
         'batch-size': 32,
+        'batch-size': 128,
     }
 
 }
