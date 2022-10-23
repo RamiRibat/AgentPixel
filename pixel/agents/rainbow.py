@@ -130,10 +130,11 @@ class RainbowLearner(MFRL):
                 RainbowLT.n = T
                 RainbowLT.refresh()
 
-                self.update_buffer_beta0(T)
+                # self.update_buffer_beta0(T)
                 # self.update_buffer_beta()
 
                 if (T>iT): # Start training after iT
+                    self.update_buffer_beta()
                     if (I%Lf==0):
                         # for _ in range(n_envs):
                         Jq = self.train_rainbow(I)
