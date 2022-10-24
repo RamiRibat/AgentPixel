@@ -109,8 +109,8 @@ class SegmentTree: # Done
     def total(self): # Done
         return self.sum_tree[0]
 
-    def get(self, data_idx): # Done
-        return self.data[data_idx % self.tree_capacity]
+    def get(self, idx): # Done
+        return self.data[idx % self.tree_capacity]
 
     def find(self, prios): # Done
         idxs = self._retrieve(np.zeros(prios.shape, dtype=np.int32), prios)
