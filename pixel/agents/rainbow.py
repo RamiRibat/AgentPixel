@@ -192,8 +192,8 @@ class RainbowLearner(MFRL):
                 Traj = Traj_new
 
                 # T += 1 # single
-                # T += steps # vec
-                T = self.buffer.size()
+                T += steps # vec
+                # T = self.buffer.size()
                 RainbowLT.n = T
                 RainbowLT.refresh()
 
