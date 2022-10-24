@@ -88,7 +88,7 @@ class MFRL:
             action = self.learn_env.action_space.sample()
 
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
-        print('observation: ', observation.shape)
+        # print('observation: ', observation.shape)
 
         if self.configs['environment']['n-envs'] == 0:
             observation = np.array([observation])
