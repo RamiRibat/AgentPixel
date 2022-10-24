@@ -63,8 +63,10 @@ class RainbowAgent:
     def get_e_greedy_action(self, observation, epsilon=0.001, evaluation=True): # Select Action(s) based on greedy-policy
         with T.no_grad():
             if np.random.random() >= epsilon:
+                # print('greedy-act')
                 return self.get_greedy_action(observation, evaluation=True)
             else:
+                # print('random-act')
                 return np.random.randint(0, self.act_dim)
 
     def get_action(self, observation, epsilon=None, evaluation=False): # interaction
@@ -209,6 +211,7 @@ class RainbowLearner(MFRL):
                         oldJq = Jq
                 else:
                     Jq = oldJq
+                # Jq = 0
 
                 if (I%Vf==0):
                     RainbowLT.colour = 'MAGENTA'
@@ -471,7 +474,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-{environment}-X{n_envs}-NL" # H < -2.7
+    group_name = f"{algorithm}-{environment}-X{n_envs}" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:

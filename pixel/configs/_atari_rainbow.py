@@ -18,7 +18,7 @@ configurations = {
         'domain': 'atari',
         'state': 'pixel',
         'action': 'discrete',
-        'n-envs': [0],
+        'n-envs': [64],
         'asynchronous': True,
         'n-stacks': 4,
         'reward-clip': 1,
@@ -38,16 +38,16 @@ configurations = {
     'learning': {
         'total-steps': int(50e6), # 50e6 steps X4 = 200e6 frames
         'init-steps': int(20e3),
-        'expl-steps': int(0),
+        'expl-steps': int(10e3),
         'learn-freq': 4, # iteration
-        'grad-steps': 1,
+        'grad-steps': 4,
         # 'log-freq': 0,
         'render': False,
     },
 
     'evaluation': {
         'evaluate': True,
-        'eval-freq': int(1e5), # iteration X n-envs
+        'eval-freq': int(2.5e3), # iteration X n-envs
         'episodes': 5,
         'render': False,
     },
@@ -67,8 +67,8 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            # 'target-update-frequency': int(200), # iteration (/n)
-            'target-update-frequency': int(8e3), # time-steps --> iteration
+            'target-update-frequency': int(200), # iteration (/n)
+            # 'target-update-frequency': int(8e3), # time-steps --> iteration
         }
     },
 
@@ -106,8 +106,8 @@ configurations = {
         'obs-type': 'pixel',
         'buffer-type': 'PER',
         'capacity': int(1e6),
-        'batch-size': 32,
-        # 'batch-size': 128,
+        # 'batch-size': 32,
+        'batch-size': 128,
     }
 
 }
