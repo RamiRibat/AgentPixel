@@ -129,43 +129,43 @@ environment = {
 #
 #
 #
-if __name__ == '__main__':
-    # parser = argparse.ArgumentParser()
-    # for k, v in environment.items():
-    #     parser.add_argument(f"--{k}", type=type(v), default=v)
-    # configs = parser.parse_args()
-
-    configs = environment
-
-
-    env = GymMaker(configs)
-
-    observation, info = env.reset()
-    # envs.render()
-    mask = np.ones([max(1, configs['n-envs'])], dtype=bool)
-    total_steps = 0
-
-    LS = int(1e4)
-    LT = trange(1, LS+1, desc=configs['name'], position=0)
-
-    for t in LT:
-        if mask.sum()==0:
-            o, info = env.reset()
-            mask = np.ones([max(1, configs['n-envs'])], dtype=bool)
-            # envs.render()
-        action = env.action_space.sample()
-        print('observation: ', observation.shape)
-        print('action: ', action)
-        observation_next, reward, terminated, truncated, info = env.step(action)
-        print('reward: ', reward)
-        print('terminated: ', terminated)
-        # envs.render()
-        # time.sleep(0.05)
-        if configs['n-envs'] == 0:
-            terminated, truncated = np.array([terminated]), np.array([truncated])
-        mask[mask] = ~terminated[mask]
-        mask[mask] = ~truncated[mask]
-        total_steps += mask.sum()
-        if total_steps >= LS: break
-    print('observation: ', observation.shape)
-    env.close()
+# if __name__ == '__main__':
+#     # parser = argparse.ArgumentParser()
+#     # for k, v in environment.items():
+#     #     parser.add_argument(f"--{k}", type=type(v), default=v)
+#     # configs = parser.parse_args()
+#
+#     configs = environment
+#
+#
+#     env = GymMaker(configs)
+#
+#     observation, info = env.reset()
+#     # envs.render()
+#     mask = np.ones([max(1, configs['n-envs'])], dtype=bool)
+#     total_steps = 0
+#
+#     LS = int(1e4)
+#     LT = trange(1, LS+1, desc=configs['name'], position=0)
+#
+#     for t in LT:
+#         if mask.sum()==0:
+#             o, info = env.reset()
+#             mask = np.ones([max(1, configs['n-envs'])], dtype=bool)
+#             # envs.render()
+#         action = env.action_space.sample()
+#         print('observation: ', observation.shape)
+#         print('action: ', action)
+#         observation_next, reward, terminated, truncated, info = env.step(action)
+#         print('reward: ', reward)
+#         print('terminated: ', terminated)
+#         # envs.render()
+#         # time.sleep(0.05)
+#         if configs['n-envs'] == 0:
+#             terminated, truncated = np.array([terminated]), np.array([truncated])
+#         mask[mask] = ~terminated[mask]
+#         mask[mask] = ~truncated[mask]
+#         total_steps += mask.sum()
+#         if total_steps >= LS: break
+#     print('observation: ', observation.shape)
+#     env.close()

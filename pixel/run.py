@@ -15,12 +15,17 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
+valid_algorithms = {'DQN': 'dqn', 'Rainbow': 'rainbow', 'DERainbow': 'rainbow'}
+
+
 def find_agent(alg):
+    alg = valid_algorithms[alg]
     cwd = os.getcwd()
     agent_dir = cwd + '/pixel/agents/'
     for root, dirs, files in os.walk(agent_dir):
         for f in files:
-            if f == (alg.lower() + '.py'):
+            # if f == (alg.lower() + '.py'):
+            if f == (alg + '.py'):
                 agent = os.path.join(root, f)
     return agent
 
