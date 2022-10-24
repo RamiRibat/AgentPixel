@@ -203,12 +203,11 @@ class ReplayBuffer: # Done
         self.t = 0 if d else self.t+1
 
     def append_sard_vec(self, s, a, r, d, mask) -> None: # Done
+        pixel = self.configs['obs-type'] == 'pixel'
         for i in range(len(mask)):
             if mask[i]:
-                if self.configs['obs-type'] == 'pixel':# s = np.multiply(s, 255)
-                    sard = (self.t, s[i][-1]*255, a[i], r[i], d[i]) if self.history > 1 else (self.t, s[i]*255, a[i], r[i], d[i])
-                else:
-                    sard = (self.t, s[i][-1], a[i], r[i], d[i]) if self.history > 1 else (self.t, s[i], a[i], r[i], d[i])
+                sard = (self.t, s[i][-1]*255 if pixel else s[i][-1], a[i], r[i], d[i]) if self.history > 1\
+                else (self.t, s[i]*255 if pixel else s[i], a[i], r[i], d[i])
                 if self.configs['buffer-type'] == 'PER':
                     self.transitions.append(sard, self.transitions.max)
                 else:
@@ -218,7 +217,6 @@ class ReplayBuffer: # Done
     def sample_batch(self, batch_size) -> Dict: # Done
         if self.configs['buffer-type'] == 'PER':
             total_prios = self.transitions.total()
-            print('total-prios: ', total_prios)
             segment_batch = self._sample_batch_from_segments(batch_size, total_prios)
             probs = segment_batch['probs'] / total_prios
             capacity = self.capacity if self.transitions.full else self.transitions.idx
