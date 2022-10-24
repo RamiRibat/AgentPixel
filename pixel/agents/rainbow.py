@@ -192,22 +192,23 @@ class RainbowLearner(MFRL):
                 Traj = Traj_new
 
                 # T += 1 # single
-                T += steps # vec
+                # T += steps # vec
+                T = self.buffer.size()
                 RainbowLT.n = T
                 RainbowLT.refresh()
 
-                if (T>iT): # Start training after iT
-                    self.update_buffer_beta(steps)
-                    if (I%Lf==0):
-                        # RainbowLT.colour = 'RED'
-                        # RainbowLT.refresh()
-                        for g in range(G):
-                            Jq = self.train_rainbow(I)
-                        # RainbowLT.colour = 'BLACK'
-                        # RainbowLT.refresh()
-                        oldJq = Jq
-                else:
-                    Jq = oldJq
+                # if (T>iT): # Start training after iT
+                #     self.update_buffer_beta(steps)
+                #     if (I%Lf==0):
+                #         # RainbowLT.colour = 'RED'
+                #         # RainbowLT.refresh()
+                #         for g in range(G):
+                #             Jq = self.train_rainbow(I)
+                #         # RainbowLT.colour = 'BLACK'
+                #         # RainbowLT.refresh()
+                #         oldJq = Jq
+                # else:
+                #     Jq = oldJq
 
                 if (I%Vf==0):
                     RainbowLT.colour = 'GREEN'
@@ -232,6 +233,7 @@ class RainbowLearner(MFRL):
                     logs['time/sps-avg                        '] = np.mean(SPSList)
                     logs['time/total-real                     '] = total_time_real
                     RainbowLT.set_postfix({'S/S': sps, 'LZ': np.mean(ZList), 'VZ': np.mean(VZ)})
+                    # print(f'T={T} | B={self.buffer.size()}')
                     if self.WandB: wandb.log(logs, step=T)
                     RainbowLT.colour = 'BLACK'
                     RainbowLT.refresh()
@@ -469,7 +471,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-{environment}-X{n_envs}" # H < -2.7
+    group_name = f"{algorithm}-{environment}-X{n_envs}-NL" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:
