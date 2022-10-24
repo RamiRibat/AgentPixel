@@ -34,7 +34,6 @@ class NDCQNetwork(nn.Module):
         optimizer = 'T.optim.' + configs['optimizer']['type']
         lr = configs['optimizer']['lr']
         eps = configs['optimizer']['eps']
-        # norm_clip = configs['optimizer']['norm-clip']
 
         self.act_dim, self.atom_size = act_dim, hyper_para['atom-size']
         self.support = T.linspace(
@@ -67,6 +66,23 @@ class NDCQNetwork(nn.Module):
         q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
         return F.softmax(q_atoms, dim=-1).clamp(min=1e-3)
 
+    # def forward(self, observation: T.Tensor, log = False) -> T.Tensor:
+    #     q_atoms = self.distribution(observation)
+    #     if log:
+    #         q = F.log_softmax(q_atoms, dim=2)
+    #     else:
+    #         q = F.softmax(q_atoms, dim=2)
+    #         # q = F.softmax(q_atoms, dim=-1).clamp(min=1e-3)
+    #     # q = T.sum(distribution*self.support, dim=2)
+    #     return q
+    #
+    # def distribution(self, observation: T.Tensor) -> T.Tensor:
+    #     feature = self.feature_layer(observation)
+    #     value = self.v_net(feature).view(-1, 1, self.atom_size)
+    #     advantage = self.adv_net(feature).view(-1, self.act_dim, self.atom_size)
+    #     q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
+    #     return q_atoms
+
     def reset_noise(self):
         self.v_net.reset_noise()
         self.adv_net.reset_noise()
@@ -74,6 +90,80 @@ class NDCQNetwork(nn.Module):
     def _evaluation_mode(self, mode=False):
         self.v_net._evaluation_mode(mode)
         self.adv_net._evaluation_mode(mode)
+
+
+
+
+
+class NDCQNetwork2(nn.Module):
+    def __init__(
+        self,
+        obs_dim, act_dim,
+        configs, hyper_para,
+        seed = 0, device='cpu'):
+        # print('Initialize NDCQNetwork')
+        super(NDCQNetwork2, self).__init__()
+
+        optimizer = 'T.optim.' + configs['optimizer']['type']
+        lr = configs['optimizer']['lr']
+        eps = configs['optimizer']['eps']
+
+        self.act_dim, self.atom_size = act_dim, hyper_para['atom-size']
+        self.support = T.linspace(
+                            hyper_para['v-min'],
+                            hyper_para['v-max'],
+                            hyper_para['atom-size']).to(device)
+
+        if obs_dim == 'pixel':
+            self.feature_layer = Encoder(hyper_para['history'], configs['encoder'])
+            self.feature_dim = self.feature_layer.feature_dim
+        else:
+            self.feature_layer = nn.Sequential(nn.Linear(obs_dim, configs['mlp']['arch'][0]), nn.ReLU())
+            self.feature_dim = configs['mlp']['arch'][0]
+        self.v_net = NoisyNetwork(self.feature_dim, 1*self.atom_size, configs['mlp'])
+        self.adv_net = NoisyNetwork(self.feature_dim, self.act_dim*self.atom_size, configs['mlp'])
+        # print('NDCQNetwork: ', self)
+        self.to(device)
+
+        self.optimizer = eval(optimizer)(self.parameters(), lr=lr, eps=eps)
+
+    # def forward(self, observation: T.Tensor) -> T.Tensor:
+    #     distribution = self.distribution(observation)
+    #     q = T.sum(distribution*self.support, dim=2)
+    #     return q
+    #
+    # def distribution(self, observation: T.Tensor) -> T.Tensor:
+    #     feature = self.feature_layer(observation)
+    #     value = self.v_net(feature).view(-1, 1, self.atom_size)
+    #     advantage = self.adv_net(feature).view(-1, self.act_dim, self.atom_size)
+    #     q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
+    #     return F.softmax(q_atoms, dim=-1).clamp(min=1e-3)
+
+    def forward(self, observation: T.Tensor, log = False) -> T.Tensor:
+        q_atoms = self.distribution(observation)
+        if log:
+            q = F.log_softmax(q_atoms, dim=2)
+        else:
+            q = F.softmax(q_atoms, dim=2)
+            # q = F.softmax(q_atoms, dim=-1).clamp(min=1e-3)
+        # q = T.sum(distribution*self.support, dim=2)
+        return q
+
+    def distribution(self, observation: T.Tensor) -> T.Tensor:
+        feature = self.feature_layer(observation)
+        value = self.v_net(feature).view(-1, 1, self.atom_size)
+        advantage = self.adv_net(feature).view(-1, self.act_dim, self.atom_size)
+        q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
+        return q_atoms
+
+    def reset_noise(self):
+        self.v_net.reset_noise()
+        self.adv_net.reset_noise()
+
+    def _evaluation_mode(self, mode=False):
+        self.v_net._evaluation_mode(mode)
+        self.adv_net._evaluation_mode(mode)
+
 
 
 

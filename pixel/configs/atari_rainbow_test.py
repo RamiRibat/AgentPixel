@@ -21,11 +21,18 @@ configurations = {
         'n-envs': [0],
         'asynchronous': True,
         'n-stacks': 4,
-        'frame-skip': 4,
         'reward-clip': 1,
         'max-steps': int(27e3), # per episode
         'max-frames': int(108e3), # per episode
-        'pre-process': ['AtariPreprocessing'],
+        'pre-processing': {
+            'noop_max': 30,
+            'frame_skip': 4,
+            'screen_size': 84,
+            'terminal_on_life_loss': False,
+            'grayscale_obs': True,
+            'grayscale_newaxis': False,
+            'scale_obs': True, # default=False
+        },
     },
 
     'learning': {
@@ -54,11 +61,10 @@ configurations = {
         # 'model': None,
         # 'on-policy': False,
         # 'model-based': False,
-        'hyper-parameters': {
+        'hyperparameters': {
             'history': 4,
             'n-steps': 3,
             'gamma': 0.99,
-            # 'alpha': 0.2,
             'omega': 0.5, # prio-exponent
             'beta': 0.4, # prio-weight
             'prio-eps': 1e-6,
@@ -93,7 +99,7 @@ configurations = {
             },
             'optimizer': {
                 'type': 'Adam',
-                'lr': 65e-5,
+                'lr': 6.25e-5,
                 'eps': 1.5e-4,
                 'norm-clip': 10,
             },

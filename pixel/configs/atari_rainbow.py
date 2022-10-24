@@ -21,11 +21,18 @@ configurations = {
         'n-envs': [0],
         'asynchronous': True,
         'n-stacks': 4,
-        'frame-skip': 4,
         'reward-clip': 1,
         'max-steps': int(27e3), # per episode
         'max-frames': int(108e3), # per episode
-        'pre-process': ['AtariPreprocessing'],
+        'pre-processing': {
+            'noop_max': 30,
+            'frame_skip': 4,
+            'screen_size': 84,
+            'terminal_on_life_loss': False,
+            'grayscale_obs': True,
+            'grayscale_newaxis': False,
+            'scale_obs': True, # default=False
+        },
     },
 
     'learning': {
@@ -33,9 +40,9 @@ configurations = {
         # 'init-steps': int(20e1),
         'total-steps': int(50e6), # 50e6 steps X4 = 200e6 frames
         'init-steps': int(20e3),
-        'expl-steps': int(10e3),
-        # 'learn-freq': 4, # iteration
-        'learn-freq': 1, # iteration
+        'expl-steps': int(0),
+        'learn-freq': 4, # iteration
+        # 'learn-freq': 1, # iteration
         'grad-steps': 1,
         'log-freq': 0,
         'render': False,
@@ -45,7 +52,7 @@ configurations = {
         'evaluate': True,
         # 'eval-freq': int(1e5),
         # 'episodes': 10,
-        # 'eval-freq': int(1e5),
+        # 'eval-freq': int(1e5), # time-steps --> iteration (/n)
         'eval-freq': int(1e3), # iteration X n-envs
         'episodes': 5,
         'render': False,
@@ -56,7 +63,7 @@ configurations = {
         # 'model': None,
         # 'on-policy': False,
         # 'model-based': False,
-        'hyper-parameters': {
+        'hyperparameters': {
             'history': 4,
             'n-steps': 3,
             'gamma': 0.99,
@@ -66,8 +73,8 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            'target-update-frequency': int(200),
-            # 'target-update-frequency': int(8e3),
+            'target-update-frequency': int(200), # iteration (/n)
+            # 'target-update-frequency': int(8e3), # time-steps --> iteration
         }
     },
 
@@ -105,7 +112,7 @@ configurations = {
         'obs-type': 'pixel',
         'buffer-type': 'PER',
         'capacity': int(1e6),
-        'batch-size': 32,
+        # 'batch-size': 32,
         'batch-size': 128,
     }
 

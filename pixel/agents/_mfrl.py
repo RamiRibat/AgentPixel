@@ -5,10 +5,9 @@ import numpy as np
 import gym
 
 from pixel.envs.make import GymMaker
-# from pixel.data.memory import PixelPER
 # from pixel.data.buffers import ReplayBuffer, PERBuffer, NSRBuffer
 
-from pixel.data.mem import GeneralReplay
+from pixel.data.replay import ReplayBuffer
 
 
 
@@ -41,86 +40,45 @@ class MFRL:
     def _set_buffer(self):
         n_envs = self.configs['environment']['n-envs']
         obs_dim, act_dim = self.obs_dim, self.act_dim
-        self.buffer = GeneralReplay(
+        configs = self.configs['data']
+        hyperparameters = self.configs['algorithm']['hyperparameters']
+        seed, device = self.seed, self._device_
+        self.buffer = ReplayBuffer(
             n_envs=n_envs,
             obs_dim=obs_dim,
             act_dim=act_dim,
-            configs=self.configs['data'],
-            hyper_para=self.configs['algorithm']['hyper-parameters'],
-            seed=self.seed, device=self._device_)
+            configs=configs,
+            hyperparameters=hyperparameters,
+            seed=seed, device=device)
 
-        # buffer_cfgs = self.configs['data']
-        # # buffer_size = self.configs['data']['buffer-size']
-        # # batch_size = self.configs['data']['batch-size']
-        # buffer_type = self.configs['data']['buffer-type']
-        # hyper_para = self.configs['algorithm']['hyper-parameters']
-        # if buffer_type == 'simple':
-        #     self.buffer = ReplayBuffer(obs_dim, max_size, batch_size)
-        # elif buffer_type == 'per':
-        #     alpha = self.configs['algorithm']['hyper-parameters']['alpha']
-        #     self.buffer = PERBuffer(obs_dim, max_size, batch_size, alpha)
-        # elif buffer_type == 'simple+nSteps':
-        #     n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
-        #     self.buffer = NSRBuffer(obs_dim, max_size, batch_size, n_steps=1)
-        #     self.buffer_n = NSRBuffer(obs_dim, max_size, batch_size, n_steps=n_steps)
-        # elif buffer_type == 'per+nSteps': # Rainbow
-        #     alpha = self.configs['algorithm']['hyper-parameters']['alpha']
-        #     n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
-        #     self.buffer_per = PERBuffer(obs_dim, max_size, batch_size, alpha)
-        #     self.buffer_n = NSRBuffer(obs_dim, max_size, batch_size, n_steps=n_steps)
-        # elif buffer_type == 'pixel-simple': # DQN
-        #     self.buffer = PixelER(buffer_cfgs, hyper_para, device=self._device_)
-        # elif buffer_type == 'pixel-per': # Rainbow
-        #     self.buffer = PixelPER(buffer_cfgs, hyper_para, device=self._device_)
-
-    def interact(self, observation, mask, Z, L, t, Traj, epsilon=0.001):
-        n_envs = self.configs['environment']['n-envs']
-        n_stacks = self.configs['environment']['n-stacks']
+    def interact(self, observation, Z, L, t, Traj, epsilon=0.001):
         xT = self.configs['learning']['expl-steps']
-
-        if mask.sum() == 0:
-            Z, S, L, Traj = 0, 0, 0, Traj+1
-            observation, info = self.learn_env.reset()
-            mask = np.ones([max(1, n_envs)], dtype=bool)
 
         if t > xT:
             action = self.agent.get_action(observation, epsilon=epsilon)
         else:
             action = self.learn_env.action_space.sample()
 
-        # print('observation: ', observation.shape)
-        # print('action: ', action)
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
-        # print('reward: ', reward)
-        # print('terminated: ', terminated)
 
-        if self.configs['environment']['n-envs'] == 0:
-            observation = np.array([observation])
-            action = np.array([action])
-            reward = np.array([reward])
-            terminated = np.array([terminated])
-            truncated = np.array([truncated])
-
-        self.append_sard_in_buffer(
-            observation[mask],
-            action[mask],
-            reward[mask],
-            terminated[mask])
-
-        observation = observation_next
-        mask[mask] = ~terminated[mask]
-        mask[mask] = ~truncated[mask]
-
-        # print('mask: ', mask)
-
-        Z += np.mean(reward)
+        Z += reward
         L += 1
 
-        return observation, mask, Z, L, Traj
+        self.buffer.append_sard(
+            observation,
+            action,
+            reward,
+            terminated)
+
+        observation = observation_next
+
+        if terminated or truncated:
+            Z, S, L, Traj = 0, 0, 0, Traj+1
+            observation, info = self.learn_env.reset()
+
+        return observation, Z, L, Traj
 
     def interact_vec(self, observation, mask, Z, L, T, Traj, epsilon=0.001):
-        # print('interact_vec')
-        # print('mask: ', mask)
         n_envs = self.configs['environment']['n-envs']
         xT = self.configs['learning']['expl-steps']
 
@@ -130,7 +88,6 @@ class MFRL:
             action = self.learn_env.action_space.sample()
 
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
-        self.buffer.append_sard_vec(observation, action, reward, terminated, mask)
 
         if self.configs['environment']['n-envs'] == 0:
             observation = np.array([observation])
@@ -139,8 +96,10 @@ class MFRL:
             terminated = np.array([terminated])
             truncated = np.array([truncated])
 
-        Z += reward[mask].sum() / n_envs
-        L += mask.sum() / n_envs
+        self.buffer.append_sard_vec(observation, action, reward, terminated, mask)
+
+        Z += reward[mask].sum() / max(1, n_envs)
+        L += mask.sum() / max(1, n_envs)
         steps = mask.sum()
 
         observation = observation_next
@@ -148,7 +107,6 @@ class MFRL:
         mask[mask] = ~truncated[mask]
 
         if mask.sum()==0:
-            # print('env.reset')
             Z, S, L, Traj = 0, 0, 0, Traj+1
             observation, info = self.learn_env.reset()
             mask = np.ones([max(1, n_envs)], dtype=bool)
@@ -205,7 +163,8 @@ class MFRL:
                 Z, S, L = 0, 0, 0
                 observation, info = self.eval_env.reset()
                 while True:
-                    action = self.agent.get_greedy_action(observation, evaluation=True)
+                    # action = self.agent.get_greedy_action(observation, evaluation=True)
+                    action = self.agent.get_e_greedy_action(observation, evaluation=True)
                     observation, reward, terminated, truncated, info = self.eval_env.step(action)
                     Z += reward
                     L += 1

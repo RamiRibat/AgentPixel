@@ -57,8 +57,16 @@ class GymMaker:
                         frameskip=1,
                         )
                 if configs['state'] == 'pixel':
-                    env = AtariPreprocessing(env, frame_skip=configs['frame-skip'])
-                    env = FrameStack(env, num_stack=configs['n-stacks'])
+                    # env = AtariPreprocessing(
+                    #         env=env,
+                    #         frame_skip=configs['frame-skip'],
+                    #         scale_obs=configs['scale-obs'])
+                    env = AtariPreprocessing(
+                            env=env,
+                            **configs['pre-processing'])
+                    env = FrameStack(
+                            env=env,
+                            num_stack=configs['n-stacks'])
                     pass
                 return env
             return _make

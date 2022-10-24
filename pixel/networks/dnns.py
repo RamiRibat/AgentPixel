@@ -19,7 +19,6 @@ class NoisyLinear(nn.Module):
         self.reset_parametrs()
         self.reset_noise()
         self.evaluation_mode = False
-        # print('NoisyLinear.std: ', self.std_init)
 
     def forward(self, x: T.Tensor) -> T.Tensor:
         if self.evaluation_mode:

@@ -19,7 +19,7 @@ nn, F = T.nn, T.nn.functional
 from torch.nn.utils import clip_grad_norm_
 
 from pixel.agents._mfrl import MFRL
-from pixel.networks.value_functions import NDCQNetwork
+from pixel.networks.value_functions import NDCQNetwork, NDCQNetwork2
 from pixel.utils.tools import kill_process
 
 
@@ -41,9 +41,9 @@ class RainbowAgent:
     def _set_q(self):
         obs_dim, act_dim = self.obs_dim, self.act_dim
         net_cfgs = self.configs['critic']['network']
-        hyper_para  = self.configs['algorithm']['hyper-parameters']
+        hyperparameters  = self.configs['algorithm']['hyperparameters']
         seed, device = self.seed, self._device_
-        return NDCQNetwork(obs_dim, act_dim, net_cfgs, hyper_para, seed, device)
+        return NDCQNetwork(obs_dim, act_dim, net_cfgs, hyperparameters, seed, device)
 
     def get_q(self, observation, action):
         return self.online_net(observation).gather(1, action)
@@ -54,16 +54,77 @@ class RainbowAgent:
 
     def get_greedy_action(self, observation, evaluation=False): # Select Action(s) based on greedy-policy
         with T.no_grad():
+            observation = T.tensor(np.array(observation), dtype=T.float32, device=self._device_)
             if evaluation or self.configs['environment']['n-envs']==0:
-                return self.online_net(T.tensor(np.array(observation), dtype=T.float32, device=self._device_)).argmax().cpu().numpy()
+                return self.online_net(observation).argmax().cpu().numpy()
             else:
-                return self.online_net(T.tensor(np.array(observation), dtype=T.float32, device=self._device_)).argmax(1).cpu().numpy()
+                return self.online_net(observation).argmax(1).cpu().numpy()
 
-    def get_action(self, observation, epsilon=None, evaluation=False):
+    def get_e_greedy_action(self, observation, epsilon=0.001, evaluation=True): # Select Action(s) based on greedy-policy
+        with T.no_grad():
+            if np.random.random() >= epsilon:
+                return self.get_greedy_action(observation, evaluation=True)
+            else:
+                return np.random.randint(0, self.act_dim)
+
+    def get_action(self, observation, epsilon=None, evaluation=False): # interaction
         return self.get_greedy_action(observation, evaluation)
 
     def _evaluation_mode(self, mode=False):
         self.online_net._evaluation_mode(mode)
+
+
+
+class RainbowAgent2:
+    def __init__(self,
+                 obs_dim, act_dim,
+                 configs, seed, device):
+        self.obs_dim, self.act_dim= obs_dim, act_dim
+        self.configs, self.seed = configs, seed
+        self._device_ = device
+        self.online_net, self.target_net = None, None
+        self._build()
+
+    def _build(self):
+        self.online_net, self.target_net = self._set_q(), self._set_q()
+        self.target_net.load_state_dict(self.online_net.state_dict())
+        self.target_net.eval()
+
+    def _set_q(self):
+        obs_dim, act_dim = self.obs_dim, self.act_dim
+        net_cfgs = self.configs['critic']['network']
+        hyperparameters  = self.configs['algorithm']['hyperparameters']
+        seed, device = self.seed, self._device_
+        return NDCQNetwork2(obs_dim, act_dim, net_cfgs, hyperparameters, seed, device)
+
+    def get_q(self, observation, action):
+        return self.online_net(observation).gather(1, action)
+
+    def get_double_q_target(self, observation):
+        with T.no_grad():
+            return self.target_net(observation).gather(1, self.online_net(observation).argmax(dim=1, keepdim=True))
+
+    def get_greedy_action(self, observation, evaluation=False): # Select Action(s) based on greedy-policy
+        with T.no_grad():
+            observation = T.tensor(np.array(observation), dtype=T.float32, device=self._device_)
+            if evaluation or self.configs['environment']['n-envs']==0:
+                return (self.online_net(observation.unsqueeze(0)) * self.online_net.support).sum(2).argmax(1).item()
+            else:
+                return (self.online_net(observation.unsqueeze(0)) * self.online_net.support).sum(2).argmax(1).item()
+
+    def get_e_greedy_action(self, observation, epsilon=0.001, evaluation=True): # Select Action(s) based on greedy-policy
+        with T.no_grad():
+            if np.random.random() >= epsilon:
+                return self.get_greedy_action(observation, evaluation=True)
+            else:
+                return np.random.randint(0, self.act_dim)
+
+    def get_action(self, observation, epsilon=None, evaluation=False): # interaction
+        return self.get_greedy_action(observation, evaluation)
+
+    def _evaluation_mode(self, mode=False):
+        self.online_net._evaluation_mode(mode)
+
 
 
 
@@ -89,17 +150,19 @@ class RainbowLearner(MFRL):
 
     def _set_agent(self):
         self.agent = RainbowAgent(self.obs_dim, self.act_dim, self.configs, self.seed, self._device_)
+        # self.agent = RainbowAgent2(self.obs_dim, self.act_dim, self.configs, self.seed, self._device_)
 
     def learn(self):
         n_envs = self.configs['environment']['n-envs']
         LT = self.configs['learning']['total-steps']
         iT = self.configs['learning']['init-steps']
         xT = self.configs['learning']['expl-steps']
-        Lf = self.configs['learning']['learn-freq']
-        Vf = self.configs['evaluation']['eval-freq']
+        Lf = self.configs['learning']['learn-freq']# // n_envs
+        Vf = self.configs['evaluation']['eval-freq']# // n_envs
+
         alg = self.configs['algorithm']['name']
-        beta = self.configs['algorithm']['hyper-parameters']['beta']
-        TUf = self.configs['algorithm']['hyper-parameters']['target-update-frequency']
+        beta = self.configs['algorithm']['hyperparameters']['beta']
+        # TUf = self.configs['algorithm']['hyperparameters']['target-update-frequency']
 
         oldJq = 0
         total_steps, g = 0, 0
@@ -118,6 +181,7 @@ class RainbowLearner(MFRL):
             mask = np.ones([max(1, n_envs)], dtype=bool)
             T, I = 0, 0
             while T<LT:
+                # observation, Z, L, Traj_new = self.interact(observation, Z, L, T, Traj)
                 observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj)
 
                 if (Traj_new - Traj) > 0:
@@ -126,12 +190,10 @@ class RainbowLearner(MFRL):
                     lastZ, lastL = Z, L
                 Traj = Traj_new
 
-                T += steps # mask.sum()
+                # T += 1 # single
+                T += mask.sum() # vec
                 RainbowLT.n = T
                 RainbowLT.refresh()
-
-                # self.update_buffer_beta0(T)
-                # self.update_buffer_beta()
 
                 if (T>iT): # Start training after iT
                     self.update_buffer_beta()
@@ -195,14 +257,13 @@ class RainbowLearner(MFRL):
         I: int) -> T.Tensor:
 
         batch_size = self.configs['data']['batch-size']
-        TUf = self.configs['algorithm']['hyper-parameters']['target-update-frequency']
+        TUf = self.configs['algorithm']['hyperparameters']['target-update-frequency']
 
         batch = self.buffer.sample_batch(batch_size)
         Jq = self.update_online_net(batch)
         Jq = Jq.item()
 
-        if ((I)%TUf == 0):
-            self.update_target_net()
+        if ((I)%TUf == 0): self.update_target_net()
 
         self.agent.online_net.reset_noise()
         self.agent.target_net.reset_noise()
@@ -213,12 +274,13 @@ class RainbowLearner(MFRL):
         self,
         batch: Dict[str, np.ndarray]) -> T.Tensor:
 
-        prio_eps = self.configs['algorithm']['hyper-parameters']['prio-eps']
+        prio_eps = self.configs['algorithm']['hyperparameters']['prio-eps']
 
         idxs = batch['tree_idxs']
         importance_ws = batch['importance_ws']
 
         Jq_biased = self.compute_Jq_rainbow(batch)
+        # Jq_biased = self.compute_Jq_rainbow2(batch)
         Jq = T.mean(importance_ws * Jq_biased)
 
         self.agent.online_net.optimizer.zero_grad()
@@ -232,17 +294,18 @@ class RainbowLearner(MFRL):
 
         return Jq
 
+
     def compute_Jq_rainbow(
         self,
         batch: int):
 
         batch_size = self.configs['data']['batch-size']
 
-        n_steps = self.configs['algorithm']['hyper-parameters']['n-steps']
-        atom_size = self.configs['algorithm']['hyper-parameters']['atom-size']
-        v_min = self.configs['algorithm']['hyper-parameters']['v-min']
-        v_max = self.configs['algorithm']['hyper-parameters']['v-max']
-        gamma = self.configs['algorithm']['hyper-parameters']['gamma']
+        n_steps = self.configs['algorithm']['hyperparameters']['n-steps']
+        atom_size = self.configs['algorithm']['hyperparameters']['atom-size']
+        v_min = self.configs['algorithm']['hyperparameters']['v-min']
+        v_max = self.configs['algorithm']['hyperparameters']['v-max']
+        gamma = self.configs['algorithm']['hyperparameters']['gamma']
         gamma_n = gamma ** n_steps
 
         observations = batch['observations']
@@ -260,8 +323,8 @@ class RainbowLearner(MFRL):
             distribution_next = distribution_next[range(batch_size), q_next_actions]
 
             tZ = returns + gamma_n*(1-terminals)*self.agent.online_net.support
-            # tZ = returns.unsqueeze(1) + gamma_n*(1-terminals)*self.agent.online_net.support.unsqueeze(0)
             tZ = tZ.clamp(min=v_min, max=v_max)
+            # print('tZ: ', tZ.shape)
             b = (tZ - v_min) / delatZ
             lb = b.floor().long()
             ub = b.ceil().long()
@@ -282,6 +345,87 @@ class RainbowLearner(MFRL):
 
         return Jq
 
+    def compute_Jq_rainbow2(
+        self,
+        batch: int):
+
+        batch_size = self.configs['data']['batch-size']
+
+        n_steps = self.configs['algorithm']['hyperparameters']['n-steps']
+        atom_size = self.configs['algorithm']['hyperparameters']['atom-size']
+        Vmin = self.configs['algorithm']['hyperparameters']['v-min']
+        Vmax = self.configs['algorithm']['hyperparameters']['v-max']
+        gamma = self.configs['algorithm']['hyperparameters']['gamma']
+        # gamma_n = gamma ** n_steps
+
+        observations = batch['observations']
+        actions = batch['actions']
+        returns = batch['returns']
+        observations_next = batch['observations_next']
+        terminals = batch['terminals']
+        # print('observations: ', observations.shape)
+        # print('actions: ', actions.shape)
+        # print('returns: ', returns.shape)
+
+        log_ps = self.agent.online_net(observations, log=True)
+        log_ps_a = log_ps[range(batch_size), actions]
+
+        delatZ = float(Vmax-Vmin) / (atom_size-1)
+
+        with T.no_grad():
+            # Nth obs_next probs
+            pns = self.agent.online_net(observations)
+            dns = self.agent.online_net.support.expand_as(pns) * pns
+            argmax_idxs_ns = dns.sum(2).argmax(1)
+            self.agent.target_net.reset_noise()
+            pns = self.agent.target_net(observations_next)
+            pns_a = pns[range(batch_size), argmax_idxs_ns]
+            # q_next_actions = self.agent.online_net(observations_next).argmax(1)
+            # distribution_next = self.agent.target_net.distribution(observations_next)
+            # distribution_next = distribution_next[range(batch_size), q_next_actions]
+
+            # Tz (Belleman op)
+            Tz = returns.unsqueeze(1) + (gamma**n_steps) * (1-terminals) * self.agent.online_net.support.unsqueeze(0)
+            Tz = Tz.clamp(min=Vmin, max=Vmax)
+            # print('Tz: ', Tz.shape)
+            b = (Tz - Vmin) / delatZ
+            # tZ = returns + gamma_n*(1-terminals)*self.agent.online_net.support
+            # tZ = tZ.clamp(min=v_min, max=v_max)
+            # b = (tZ - v_min) / delatZ
+
+            # Compute L2 projection onto fixed support z
+            lb = b.floor().to(T.int64)
+            ub = b.ceil().to(T.int64)
+            # lb = b.floor().long()
+            # ub = b.ceil().long()
+            # Fix prob dissappearing mass when lb = ub = b (b; int)
+
+            # Ditribute prob of Tz
+            m = observations.new_zeros(batch_size, atom_size)
+            offset = (T.linspace(
+                0, (batch_size-1)*atom_size, batch_size
+            ).unsqueeze(1).expand(batch_size, atom_size).to(actions))
+            m.view(-1).index_add_(
+                0, (lb+offset).view(-1), (pns_a*(ub.float()-b)).view(-1))
+            m.view(-1).index_add_(
+                0, (ub+offset).view(-1), (pns_a*(b-lb.float())).view(-1))
+            # distribution_proj = T.zeros(distribution_next.size(), device=self._device_)
+            # offset = (T.linspace(
+            #     0, (batch_size-1)*atom_size, batch_size
+            # ).long().unsqueeze(1).expand(batch_size, atom_size).to(self._device_))
+            # distribution_proj.view(-1).index_add_(
+            #     0, (lb+offset).view(-1), (distribution_next*(ub.float()-b)).view(-1))
+            # distribution_proj.view(-1).index_add_(
+            #     0, (ub+offset).view(-1), (distribution_next*(b-lb.float())).view(-1))
+
+        # distribution = self.agent.online_net.distribution(observations)
+        # log_p = T.log( distribution[range(batch_size), actions.view(-1)] )
+
+        Jq = -T.sum(m * log_ps_a, 1)
+
+        return Jq
+
+
     def update_target_net(self) -> None:
         self.agent.target_net.load_state_dict(self.agent.online_net.state_dict())
 
@@ -294,7 +438,7 @@ class RainbowLearner(MFRL):
     def update_buffer_beta(self):
         LT = self.configs['learning']['total-steps']
         iT = self.configs['learning']['init-steps']
-        beta_i = self.configs['algorithm']['hyper-parameters']['beta']
+        beta_i = self.configs['algorithm']['hyperparameters']['beta']
         beta = self.buffer.beta
         beta_increase = (1-beta_i) / (LT-iT)
         self.buffer.beta = min(beta + beta_increase, 1)
