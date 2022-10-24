@@ -68,8 +68,7 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            'target-update-frequency': int(2000), # iteration (/n)
-            # 'target-update-frequency': int(8e3), # time-steps --> iteration
+            'target-update-frequency': int(2000),
         }
     },
 
@@ -82,8 +81,8 @@ configurations = {
         'network': {
             'encoder': {
                 'pre-train': False,
-                'arch': ['canonical', 3136],
-                # 'arch': ['data-efficient', 576],
+                # 'arch': ['canonical', 3136],
+                'arch': ['data-efficient', 576],
                 'activation': 'ReLU',
             },
             'mlp': {
@@ -108,8 +107,8 @@ configurations = {
         'obs-type': 'pixel',
         'buffer-type': 'PER',
         'capacity': int(1e5),
-        # 'batch-size': 32,
-        'batch-size': 128,
+        'batch-size': 32,
+        # 'batch-size': 128,
     }
 
 }
