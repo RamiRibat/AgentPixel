@@ -218,7 +218,7 @@ class RainbowLearner(MFRL):
                     sps = T/total_time_real
                     SPSList.append(sps)
                     self.agent._evaluation_mode(True), self.agent.online_net.eval()
-                    # VZ, VS, VL = self.evaluate()
+                    VZ, VS, VL = self.evaluate()
                     self.agent._evaluation_mode(False), self.agent.online_net.train()
                     logs['data/env_buffer_size                '] = self.buffer.size()
                     # logs['training/rainbow/Jq                 '] = Jq
@@ -245,7 +245,7 @@ class RainbowLearner(MFRL):
         sps = T/total_time_real
         SPSList.append(sps)
         self.agent._evaluation_mode(True), self.agent.online_net.eval()
-        # VZ, VS, VL = self.evaluate()
+        VZ, VS, VL = self.evaluate()
         self.agent._evaluation_mode(False), self.agent.online_net.train()
         logs['data/env_buffer_size                '] = self.buffer.size()
         # logs['training/rainbow/Jq                 '] = Jq
