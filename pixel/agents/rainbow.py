@@ -158,6 +158,7 @@ class RainbowLearner(MFRL):
         iT = self.configs['learning']['init-steps']
         xT = self.configs['learning']['expl-steps']
         Lf = self.configs['learning']['learn-freq']# // n_envs
+        G =  self.configs['learning']['grad-steps']
         Vf = self.configs['evaluation']['eval-freq']# // n_envs
 
         alg = self.configs['algorithm']['name']
@@ -191,20 +192,26 @@ class RainbowLearner(MFRL):
                 Traj = Traj_new
 
                 # T += 1 # single
-                T += mask.sum() # vec
+                T += steps # vec
                 RainbowLT.n = T
                 RainbowLT.refresh()
 
                 if (T>iT): # Start training after iT
-                    self.update_buffer_beta()
+                    self.update_buffer_beta(steps)
                     if (I%Lf==0):
-                        # for _ in range(n_envs):
-                        Jq = self.train_rainbow(I)
+                        # RainbowLT.colour = 'RED'
+                        # RainbowLT.refresh()
+                        for g in range(G):
+                            Jq = self.train_rainbow(I)
+                        # RainbowLT.colour = 'BLACK'
+                        # RainbowLT.refresh()
                         oldJq = Jq
                 else:
                     Jq = oldJq
 
                 if (I%Vf==0):
+                    RainbowLT.colour = 'GREEN'
+                    RainbowLT.refresh()
                     cur_time_real = time.time()
                     total_time_real = cur_time_real - start_time_real
                     sps = T/total_time_real
@@ -226,8 +233,11 @@ class RainbowLearner(MFRL):
                     logs['time/total-real                     '] = total_time_real
                     RainbowLT.set_postfix({'S/S': sps, 'LZ': np.mean(ZList), 'VZ': np.mean(VZ)})
                     if self.WandB: wandb.log(logs, step=T)
+                    RainbowLT.colour = 'BLACK'
+                    RainbowLT.refresh()
                 I += 1
 
+        RainbowLT.close()
 
         total_time_real = cur_time_real - start_time_real
         sps = T/total_time_real
@@ -318,13 +328,11 @@ class RainbowLearner(MFRL):
 
         with T.no_grad():
             q_next_actions = self.agent.online_net(observations_next).argmax(1)
-            # self.agent.target_net.reset_noise()
             distribution_next = self.agent.target_net.distribution(observations_next)
             distribution_next = distribution_next[range(batch_size), q_next_actions]
 
             tZ = returns + gamma_n*(1-terminals)*self.agent.online_net.support
             tZ = tZ.clamp(min=v_min, max=v_max)
-            # print('tZ: ', tZ.shape)
             b = (tZ - v_min) / delatZ
             lb = b.floor().long()
             ub = b.ceil().long()
@@ -435,12 +443,13 @@ class RainbowLearner(MFRL):
         fraction = min(T/LT, 1.0)
         self.buffer.beta = beta + fraction * (1.0 - beta)
 
-    def update_buffer_beta(self):
+    def update_buffer_beta(self, steps):
         LT = self.configs['learning']['total-steps']
         iT = self.configs['learning']['init-steps']
         beta_i = self.configs['algorithm']['hyperparameters']['beta']
         beta = self.buffer.beta
-        beta_increase = (1-beta_i) / (LT-iT)
+        fraction = steps / (LT-iT)
+        beta_increase = fraction * (1-beta_i)
         self.buffer.beta = min(beta + beta_increase, 1)
 
     def func2(self):

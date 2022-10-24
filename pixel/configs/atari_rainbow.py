@@ -18,7 +18,7 @@ configurations = {
         'domain': 'atari',
         'state': 'pixel',
         'action': 'discrete',
-        'n-envs': [0],
+        'n-envs': [64],
         'asynchronous': True,
         'n-stacks': 4,
         'reward-clip': 1,
@@ -36,23 +36,17 @@ configurations = {
     },
 
     'learning': {
-        # 'total-steps': int(50e2), # 50e6 steps X4 = 200e6 frames
-        # 'init-steps': int(20e1),
         'total-steps': int(50e6), # 50e6 steps X4 = 200e6 frames
         'init-steps': int(20e3),
-        'expl-steps': int(0),
+        'expl-steps': int(10e3),
         'learn-freq': 4, # iteration
-        # 'learn-freq': 1, # iteration
-        'grad-steps': 1,
-        'log-freq': 0,
+        'grad-steps': 4,
+        # 'log-freq': 0,
         'render': False,
     },
 
     'evaluation': {
         'evaluate': True,
-        # 'eval-freq': int(1e5),
-        # 'episodes': 10,
-        # 'eval-freq': int(1e5), # time-steps --> iteration (/n)
         'eval-freq': int(2.5e3), # iteration X n-envs
         'episodes': 5,
         'render': False,

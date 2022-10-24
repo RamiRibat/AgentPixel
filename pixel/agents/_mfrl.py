@@ -108,6 +108,7 @@ class MFRL:
         mask[mask] = ~truncated[mask]
 
         if mask.sum()==0:
+            # print('reset')
             Z, S, L, Traj = 0, 0, 0, Traj+1
             observation, info = self.learn_env.reset()
             mask = np.ones([max(1, n_envs)], dtype=bool)
