@@ -49,7 +49,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(1e4), # iteration X n-envs
-        'episodes': 10,
+        'episodes': 5,
         'render': False,
     },
 
