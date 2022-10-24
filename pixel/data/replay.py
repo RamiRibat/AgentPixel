@@ -205,9 +205,8 @@ class ReplayBuffer: # Done
     def append_sard_vec(self, s, a, r, d, mask) -> None: # Done
         for i in range(len(mask)):
             if mask[i]:
-                s = s[i][-1] if self.history > 1 else s[i]
                 if self.configs['obs-type'] == 'pixel': s = s*255
-                sard = (self.t, s, a[i], r[i], d[i])
+                sard = (self.t, s[i][-1], a[i], r[i], d[i]) if self.history > 1 else (self.t, s, a, r, d)
                 if self.configs['buffer-type'] == 'PER':
                     self.transitions.append(sard, self.transitions.max)
                 else:
