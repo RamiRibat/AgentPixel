@@ -197,21 +197,21 @@ class RainbowLearner(MFRL):
                 RainbowLT.n = T
                 RainbowLT.refresh()
 
-                # if (T>iT): # Start training after iT
-                #     self.update_buffer_beta(steps)
-                #     if (I%Lf==0):
-                #         # RainbowLT.colour = 'RED'
-                #         # RainbowLT.refresh()
-                #         for g in range(G):
-                #             Jq = self.train_rainbow(I)
-                #         # RainbowLT.colour = 'BLACK'
-                #         # RainbowLT.refresh()
-                #         oldJq = Jq
-                # else:
-                #     Jq = oldJq
+                if (T>iT): # Start training after iT
+                    self.update_buffer_beta(steps)
+                    if (I%Lf==0):
+                        # RainbowLT.colour = 'RED'
+                        # RainbowLT.refresh()
+                        for g in range(G):
+                            Jq = self.train_rainbow(I)
+                        # RainbowLT.colour = 'BLACK'
+                        # RainbowLT.refresh()
+                        oldJq = Jq
+                else:
+                    Jq = oldJq
 
                 if (I%Vf==0):
-                    RainbowLT.colour = 'GREEN'
+                    RainbowLT.colour = 'MAGENTA'
                     RainbowLT.refresh()
                     cur_time_real = time.time()
                     total_time_real = cur_time_real - start_time_real
@@ -221,7 +221,7 @@ class RainbowLearner(MFRL):
                     VZ, VS, VL = self.evaluate()
                     self.agent._evaluation_mode(False), self.agent.online_net.train()
                     logs['data/env_buffer_size                '] = self.buffer.size()
-                    # logs['training/rainbow/Jq                 '] = Jq
+                    logs['training/rainbow/Jq                 '] = Jq
                     logs['training/rainbow/beta               '] = self.buffer.beta
                     logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
                     logs['learning/real/rollout_return_std    '] = np.std(ZList)
@@ -235,7 +235,7 @@ class RainbowLearner(MFRL):
                     RainbowLT.set_postfix({'S/S': sps, 'LZ': np.mean(ZList), 'VZ': np.mean(VZ)})
                     # print(f'T={T} | B={self.buffer.size()}')
                     if self.WandB: wandb.log(logs, step=T)
-                    RainbowLT.colour = 'BLACK'
+                    RainbowLT.colour = None #'BLACK'
                     RainbowLT.refresh()
                 I += 1
 
@@ -248,7 +248,7 @@ class RainbowLearner(MFRL):
         VZ, VS, VL = self.evaluate()
         self.agent._evaluation_mode(False), self.agent.online_net.train()
         logs['data/env_buffer_size                '] = self.buffer.size()
-        # logs['training/rainbow/Jq                 '] = Jq
+        logs['training/rainbow/Jq                 '] = Jq
         logs['training/rainbow/beta               '] = self.buffer.beta
         logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
         logs['learning/real/rollout_return_std    '] = np.std(ZList)
