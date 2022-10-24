@@ -53,7 +53,7 @@ configurations = {
         # 'eval-freq': int(1e5),
         # 'episodes': 10,
         # 'eval-freq': int(1e5), # time-steps --> iteration (/n)
-        'eval-freq': int(1e3), # iteration X n-envs
+        'eval-freq': int(2.5e3), # iteration X n-envs
         'episodes': 5,
         'render': False,
     },
