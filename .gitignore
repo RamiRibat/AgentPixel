@@ -13,3 +13,5 @@ pixel/lightning_logs
 pixel/MUJOCO_LOG.TXT
 
 wandb
+
+pixel/data/segment_tree.py
