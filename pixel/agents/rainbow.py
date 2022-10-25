@@ -469,12 +469,13 @@ def main(configurations, seed, device, wb):
     # print('Configurations:\n', json.dumps(configurations, indent=4, sort_keys=False))
     # print('\n')
 
+    # LT = configurations[][]
     algorithm = configurations['algorithm']['name']
     environment = configurations['environment']['name']
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-200k-{environment}-X{n_envs}" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:
