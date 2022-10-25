@@ -41,14 +41,14 @@ configurations = {
         'init-steps': int(1600),
         'expl-steps': int(0),
         'learn-freq': 1, # iteration
-        'grad-steps': 4,
+        'grad-steps': 1,
         # 'log-freq': 0,
         'render': False,
     },
 
     'evaluation': {
         'evaluate': True,
-        'eval-freq': int(1e3), # iteration X n-envs
+        'eval-freq': int(1e4), # iteration X n-envs
         'episodes': 5,
         'render': False,
     },
@@ -68,8 +68,7 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            # 'target-update-frequency': int(2000),
-            'target-update-frequency': int(250),
+            'target-update-frequency': int(2000),
         }
     },
 
@@ -108,9 +107,7 @@ configurations = {
         'obs-type': 'pixel',
         'buffer-type': 'PER',
         'capacity': int(1e5),
-        # 'batch-size': 32,
-        'batch-size': 64,
-        # 'batch-size': 128,
+        'batch-size': 32,
     }
 
 }
