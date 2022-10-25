@@ -5,12 +5,12 @@
 ## Algorithms
 Algorithms we are re-implementing/plannning to re-implement:
 
-| Agents | Classic | Atari | MuJoCo | Vectorized |
+| Agents | Classic | Atari | MuJoCo | Distributed |
 | --- | :---: | :---: | :---: | :---: |
 | DQN | ✅ | ✅ |  | ✅ |
 | Double DQN | ✅ |  |  |
 | PER-DQN | ✅ |  |  |
-| Duelling DQN |  |  |  |
+| Dueling DQN |  |  |  |
 | A3C |  |  |  |
 | C51 |  |  |  |
 | Noisy DQN |  |  |  |
