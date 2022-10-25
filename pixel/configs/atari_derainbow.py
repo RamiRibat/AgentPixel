@@ -38,7 +38,7 @@ configurations = {
 
     'learning': {
         'total-steps': int(100e3), # 50e6 steps X4 = 200e6 frames
-        'init-steps': int(1600),
+        'init-steps': int(2000),
         'expl-steps': int(0),
         'learn-freq': 1, # iteration
         'grad-steps': 4,
@@ -108,8 +108,8 @@ configurations = {
         'obs-type': 'pixel',
         'buffer-type': 'PER',
         'capacity': int(1e5),
-        # 'batch-size': 32,
-        'batch-size': 64,
+        'batch-size': 32,
+        # 'batch-size': 64,
         # 'batch-size': 128,
     }
 
