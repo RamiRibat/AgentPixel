@@ -38,7 +38,7 @@ configurations = {
 
     'learning': {
         'total-steps': int(100e3), # 50e6 steps X4 = 200e6 frames
-        'init-steps': int(2000),
+        'init-steps': int(1600),
         'expl-steps': int(0),
         'learn-freq': 1, # iteration
         'grad-steps': 4,
@@ -69,7 +69,7 @@ configurations = {
             'v-max': 10.0,
             'atom-size': 51,
             # 'target-update-frequency': int(2000),
-            'target-update-frequency': int(250),
+            'target-update-frequency': int(500),
         }
     },
 
