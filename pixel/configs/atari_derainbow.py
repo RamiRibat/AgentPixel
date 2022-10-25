@@ -41,7 +41,7 @@ configurations = {
         'init-steps': int(1600),
         'expl-steps': int(0),
         'learn-freq': 1, # iteration
-        'grad-steps': 4,
+        'grad-steps': 8,
         # 'log-freq': 0,
         'render': False,
     },
