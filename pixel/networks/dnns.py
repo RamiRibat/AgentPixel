@@ -6,7 +6,7 @@ nn, F = T.nn, T.nn.functional
 
 
 class NoisyLinear(nn.Module):
-    def __init__(self, in_features, out_features, std_init: float = 0.5):
+    def __init__(self, in_features, out_features, std_init: float = 0.1):
         super(NoisyLinear, self).__init__()
         self.in_features, self.out_features = in_features, out_features
         self.std_init = std_init

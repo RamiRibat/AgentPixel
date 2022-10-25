@@ -4,6 +4,7 @@ import torch as T
 nn, F = T.nn, T.nn.functional
 
 from pixel.networks.dnns import Network, NoisyNetwork, Encoder
+from pixel.networks.dnns import NoisyLinear
 
 
 class QNetwork(nn.Module):
@@ -66,23 +67,6 @@ class NDCQNetwork(nn.Module):
         q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
         return F.softmax(q_atoms, dim=-1).clamp(min=1e-3)
 
-    # def forward(self, observation: T.Tensor, log = False) -> T.Tensor:
-    #     q_atoms = self.distribution(observation)
-    #     if log:
-    #         q = F.log_softmax(q_atoms, dim=2)
-    #     else:
-    #         q = F.softmax(q_atoms, dim=2)
-    #         # q = F.softmax(q_atoms, dim=-1).clamp(min=1e-3)
-    #     # q = T.sum(distribution*self.support, dim=2)
-    #     return q
-    #
-    # def distribution(self, observation: T.Tensor) -> T.Tensor:
-    #     feature = self.feature_layer(observation)
-    #     value = self.v_net(feature).view(-1, 1, self.atom_size)
-    #     advantage = self.adv_net(feature).view(-1, self.act_dim, self.atom_size)
-    #     q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
-    #     return q_atoms
-
     def reset_noise(self):
         self.v_net.reset_noise()
         self.adv_net.reset_noise()
@@ -120,24 +104,13 @@ class NDCQNetwork2(nn.Module):
         else:
             self.feature_layer = nn.Sequential(nn.Linear(obs_dim, configs['mlp']['arch'][0]), nn.ReLU())
             self.feature_dim = configs['mlp']['arch'][0]
+
         self.v_net = NoisyNetwork(self.feature_dim, 1*self.atom_size, configs['mlp'])
         self.adv_net = NoisyNetwork(self.feature_dim, self.act_dim*self.atom_size, configs['mlp'])
-        # print('NDCQNetwork: ', self)
+
         self.to(device)
 
         self.optimizer = eval(optimizer)(self.parameters(), lr=lr, eps=eps)
-
-    # def forward(self, observation: T.Tensor) -> T.Tensor:
-    #     distribution = self.distribution(observation)
-    #     q = T.sum(distribution*self.support, dim=2)
-    #     return q
-    #
-    # def distribution(self, observation: T.Tensor) -> T.Tensor:
-    #     feature = self.feature_layer(observation)
-    #     value = self.v_net(feature).view(-1, 1, self.atom_size)
-    #     advantage = self.adv_net(feature).view(-1, self.act_dim, self.atom_size)
-    #     q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
-    #     return F.softmax(q_atoms, dim=-1).clamp(min=1e-3)
 
     def forward(self, observation: T.Tensor, log = False) -> T.Tensor:
         q_atoms = self.distribution(observation)
@@ -145,8 +118,6 @@ class NDCQNetwork2(nn.Module):
             q = F.log_softmax(q_atoms, dim=2)
         else:
             q = F.softmax(q_atoms, dim=2)
-            # q = F.softmax(q_atoms, dim=-1).clamp(min=1e-3)
-        # q = T.sum(distribution*self.support, dim=2)
         return q
 
     def distribution(self, observation: T.Tensor) -> T.Tensor:

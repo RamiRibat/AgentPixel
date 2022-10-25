@@ -211,7 +211,7 @@ class RainbowLearner(MFRL):
                         oldJq = Jq
                 else:
                     Jq = oldJq
-                # Jq = 0
+                Jq = 0
 
                 if (I%Vf==0):
                     RainbowLT.colour = 'MAGENTA'
@@ -235,8 +235,8 @@ class RainbowLearner(MFRL):
                     logs['time/sps                            '] = sps
                     logs['time/sps-avg                        '] = np.mean(SPSList)
                     logs['time/total-real                     '] = total_time_real
-                    RainbowLT.set_postfix({'S/S': sps, 'LZ': np.mean(ZList), 'VZ': np.mean(VZ)})
-                    # print(f'T={T} | B={self.buffer.size()}')
+                    RainbowLT.set_postfix({'S/S': sps, 'LL/LZ': f'{np.mean(LList)}/{np.mean(ZList)}', 'VL/VZ': f'{np.mean(VL)}/{np.mean(VZ)}'})
+                    # print(f'I={I} | VL={np.mean(VL)} | VZ={np.mean(VZ)}')
                     if self.WandB: wandb.log(logs, step=T)
                     RainbowLT.colour = None #'BLACK'
                     RainbowLT.refresh()
@@ -475,7 +475,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-100k-{environment}-X{n_envs}" # H < -2.7
+    group_name = f"{algorithm}-200k-{environment}-X{n_envs}" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:

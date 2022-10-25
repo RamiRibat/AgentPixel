@@ -165,12 +165,14 @@ class MFRL:
                 Z, S, L = 0, 0, 0
                 observation, info = self.eval_env.reset()
                 while True:
+                    # action = self.learn_env.action_space.sample()
                     # action = self.agent.get_greedy_action(observation, evaluation=True)
                     action = self.agent.get_e_greedy_action(observation, evaluation=True)
                     observation, reward, terminated, truncated, info = self.eval_env.step(action)
                     Z += reward
                     L += 1
                     if terminated or truncated: break
+                    # if terminated: break
                 VZ.append(Z)
                 VL.append(L)
         self.eval_env.close()

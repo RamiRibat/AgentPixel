@@ -30,7 +30,7 @@ class GymMaker:
         self._device_ = device
         self.seed = seed
         self.name = configs['name']
-        self.env = self._gym_make(configs)
+        self.env = self._gym_make(configs, eval)
         self.observation_space = self.env.observation_space
         if configs['state'] == 'pixel':
             self.observation_dim = 'pixel'
@@ -45,7 +45,7 @@ class GymMaker:
             self.action_dim = self.env.single_action_space.n
         self._seed_env()
 
-    def _gym_make(self, configs):
+    def _gym_make(self, configs, eval):
         def create_env():
             def _make():
                 env = gym.make(
@@ -65,6 +65,7 @@ class GymMaker:
             return _make
 
         if self.eval:
+            if eval: configs['pre-processing']['terminal_on_life_loss'] = False
             env = create_env()
             return env()
         else:
@@ -88,7 +89,7 @@ class GymMaker:
 
     def step(self, action):
         observation_next, reward, terminated, truncated, info = self.env.step(action)
-        if self.configs['reward-clip']:
+        if self.configs['reward-clip'] and not self.eval:
             reward = np.clip(reward, -self.configs['reward-clip'], self.configs['reward-clip'])
         return observation_next, reward, terminated, truncated, info
 
