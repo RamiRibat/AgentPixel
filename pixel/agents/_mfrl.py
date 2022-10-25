@@ -172,7 +172,6 @@ class MFRL:
                     Z += reward
                     L += 1
                     if terminated or truncated: break
-                    # if terminated: break
                 VZ.append(Z)
                 VL.append(L)
         self.eval_env.close()

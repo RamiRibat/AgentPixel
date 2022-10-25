@@ -63,10 +63,8 @@ class RainbowAgent:
     def get_e_greedy_action(self, observation, epsilon=0.001, evaluation=True): # Select Action(s) based on greedy-policy
         with T.no_grad():
             if np.random.random() >= epsilon:
-                # print('greedy-act')
                 return self.get_greedy_action(observation, evaluation=True)
             else:
-                # print('random-act')
                 return np.random.randint(0, self.act_dim)
 
     def get_action(self, observation, epsilon=None, evaluation=False): # interaction
@@ -202,12 +200,8 @@ class RainbowLearner(MFRL):
                 if (T>iT): # Start training after iT
                     self.update_buffer_beta(steps)
                     if (I%Lf==0):
-                        # RainbowLT.colour = 'RED'
-                        # RainbowLT.refresh()
                         for g in range(G):
                             Jq = self.train_rainbow(I)
-                        # RainbowLT.colour = 'BLACK'
-                        # RainbowLT.refresh()
                         oldJq = Jq
                 else:
                     Jq = oldJq
@@ -235,7 +229,7 @@ class RainbowLearner(MFRL):
                     logs['time/sps                            '] = sps
                     logs['time/sps-avg                        '] = np.mean(SPSList)
                     logs['time/total-real                     '] = total_time_real
-                    RainbowLT.set_postfix({'S/S': sps, 'LL/LZ': f'{np.mean(LList)}/{np.mean(ZList)}', 'VL/VZ': f'{np.mean(VL)}/{np.mean(VZ)}'})
+                    RainbowLT.set_postfix({'ss': sps, 'LZ': f'{np.mean(ZList)}', 'VZ': f'{np.mean(VZ)}'})
                     # print(f'I={I} | VL={np.mean(VL)} | VZ={np.mean(VZ)}')
                     if self.WandB: wandb.log(logs, step=T)
                     RainbowLT.colour = None #'BLACK'
@@ -369,16 +363,12 @@ class RainbowLearner(MFRL):
         Vmin = self.configs['algorithm']['hyperparameters']['v-min']
         Vmax = self.configs['algorithm']['hyperparameters']['v-max']
         gamma = self.configs['algorithm']['hyperparameters']['gamma']
-        # gamma_n = gamma ** n_steps
 
         observations = batch['observations']
         actions = batch['actions']
         returns = batch['returns']
         observations_next = batch['observations_next']
         terminals = batch['terminals']
-        # print('observations: ', observations.shape)
-        # print('actions: ', actions.shape)
-        # print('returns: ', returns.shape)
 
         log_ps = self.agent.online_net(observations, log=True)
         log_ps_a = log_ps[range(batch_size), actions]
@@ -531,11 +521,4 @@ if __name__ == "__main__":
     configurations['environment']['name'] = args.env
     configurations['environment']['n-envs'] = args.n_envs
 
-    # LS = int(1e3)
-    # LT = trange(1, LS+1, desc=f'seed={seed}', position=0)
-    # for t in LT:
-    #     time.sleep(0.005)
-
     main(configurations, seed, device, wb)
-
-    # kill_process('monitor.py')
