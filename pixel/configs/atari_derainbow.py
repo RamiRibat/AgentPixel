@@ -37,7 +37,7 @@ configurations = {
     },
 
     'learning': {
-        'total-steps': int(500e3), # 50e6 steps X4 = 200e6 frames
+        'total-steps': int(200e3), # 50e6 steps X4 = 200e6 frames
         'init-steps': int(2000),
         'expl-steps': int(1000),
         'learn-freq': 1, # iteration
@@ -107,7 +107,7 @@ configurations = {
     'data': {
         'obs-type': 'pixel',
         'buffer-type': 'PER',
-        'capacity': int(1e5),
+        'capacity': int(2e5),
         'batch-size': 32,
         # 'batch-size': 64,
         # 'batch-size': 128,
