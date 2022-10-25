@@ -37,18 +37,18 @@ configurations = {
     },
 
     'learning': {
-        'total-steps': int(100e3), # 50e6 steps X4 = 200e6 frames
-        'init-steps': int(1600),
-        'expl-steps': int(0),
+        'total-steps': int(500e3), # 50e6 steps X4 = 200e6 frames
+        'init-steps': int(2000),
+        'expl-steps': int(1000),
         'learn-freq': 1, # iteration
-        'grad-steps': 4,
+        'grad-steps': 1,
         # 'log-freq': 0,
         'render': False,
     },
 
     'evaluation': {
         'evaluate': True,
-        'eval-freq': int(1e3), # iteration X n-envs
+        'eval-freq': int(1e4), # iteration X n-envs
         'episodes': 5,
         'render': False,
     },
@@ -68,8 +68,8 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            # 'target-update-frequency': int(2000),
-            'target-update-frequency': int(250),
+            'target-update-frequency': int(2000),
+            # 'target-update-frequency': int(250),
         }
     },
 
