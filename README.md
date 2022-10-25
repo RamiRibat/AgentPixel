@@ -5,19 +5,19 @@
 ## Algorithms
 Algorithms we are re-implementing/plannning to re-implement:
 
-| Agents | Classic | Atari | MuJoCo | Vectorized |
+| Agents | Classic | Atari | MuJoCo | Distributed |
 | --- | :---: | :---: | :---: | :---: |
 | DQN | ✅ | ✅ |  | ✅ |
-| Double DQN | ✅ |  |  |
-| PER-DQN | ✅ |  |  |
-| Duelling DQN |  |  |  |
-| A3C |  |  |  |
-| C51 |  |  |  |
-| Noisy DQN |  |  |  |
-| Rainbow | ✅ | ✅ |  | ✅ |
-| R2D2 |  |  |  |
-| NGU |  |  |  |
-| Agnet57 |  |  |  |
+| Double DQN | ✅ |  |  |  |
+| PER-DQN | ✅ |  |  |  |
+| Dueling DQN |  |  |  |  |
+| A3C |  |  |  |  |
+| C51 |  |  |  |  |
+| Noisy DQN |  |  |  |  |
+| Rainbow | ✅ | ✅ |  |  |
+| R2D2 |  |  |  | ✅ |
+| NGU |  |  |  | ✅ |
+| Agnet57 |  |  |  | ✅ |
 
 ## How to use this code
 ### Installation (Linux Ubuntu/Debian)
