@@ -41,7 +41,7 @@ configurations = {
         'init-steps': int(1600),
         'expl-steps': int(0),
         'learn-freq': 1, # iteration
-        'grad-steps': 8,
+        'grad-steps': 4,
         # 'log-freq': 0,
         'render': False,
     },
@@ -69,7 +69,7 @@ configurations = {
             'v-max': 10.0,
             'atom-size': 51,
             # 'target-update-frequency': int(2000),
-            'target-update-frequency': int(500),
+            'target-update-frequency': int(250),
         }
     },
 
