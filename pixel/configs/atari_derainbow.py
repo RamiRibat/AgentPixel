@@ -37,12 +37,11 @@ configurations = {
     },
 
     'learning': {
-        'total-steps': int(200e3), # 50e6 steps X4 = 200e6 frames
-        'init-steps': int(2000),
-        'expl-steps': int(1000),
+        'total-steps': int(200e3), # 100k in van Hasselt et al. (2019)
+        'init-steps': int(2000), # 1600 in van Hasselt et al. (2019)
+        'expl-steps': int(1000), # 0 in van Hasselt et al. (2019)
         'learn-freq': 1, # iteration
         'grad-steps': 1,
-        # 'log-freq': 0,
         'render': False,
     },
 
@@ -109,8 +108,6 @@ configurations = {
         'buffer-type': 'PER',
         'capacity': int(2e5),
         'batch-size': 32,
-        # 'batch-size': 64,
-        # 'batch-size': 128,
     }
 
 }

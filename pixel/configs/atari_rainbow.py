@@ -39,9 +39,8 @@ configurations = {
         'total-steps': int(50e6), # 50e6 steps X4 = 200e6 frames
         'init-steps': int(20e3),
         'expl-steps': int(0),
-        'learn-freq': 4, # iteration
+        'learn-freq': 4,
         'grad-steps': 1,
-        # 'log-freq': 0,
         'render': False,
     },
 
@@ -67,7 +66,6 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            # 'target-update-frequency': int(200), # iteration (/n)
             'target-update-frequency': int(8e3), # time-steps --> iteration
         }
     },
@@ -107,7 +105,6 @@ configurations = {
         'buffer-type': 'PER',
         'capacity': int(1e6),
         'batch-size': 32,
-        # 'batch-size': 128,
     }
 
 }

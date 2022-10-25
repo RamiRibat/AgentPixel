@@ -1,7 +1,9 @@
 """
 Adapted from:
-    1.https://github.com/ShangtongZhang/DeepRL
-    2.https://github.com/Kaixhin/Rainbow
+    1. https://github.com/openai/gym
+    2. https://github.com/mgbellemare/Arcade-Learning-Environment
+    3. https://github.com/ShangtongZhang/DeepRL
+    4. https://github.com/Kaixhin/Rainbow
 
 """
 import psutil
@@ -17,10 +19,7 @@ from gym.spaces import Box, Discrete, MultiDiscrete
 from gym.wrappers import AtariPreprocessing, FrameStack
 from gym.vector.async_vector_env import AsyncVectorEnv
 from gym.vector.sync_vector_env import SyncVectorEnv
-# from gym.vector.vector_env import VectorEnv, VectorEnvWrapper
 
-# import warnings
-# warnings.filterwarnings('ignore')
 
 
 class GymMaker:
@@ -45,8 +44,6 @@ class GymMaker:
         elif isinstance(self.env.single_action_space, Discrete):
             self.action_dim = self.env.single_action_space.n
         self._seed_env()
-        # print('reward-range: ', self.env.reward_range)
-        # print('env: ', self.env.spec)
 
     def _gym_make(self, configs):
         def create_env():
@@ -57,10 +54,6 @@ class GymMaker:
                         frameskip=1,
                         )
                 if configs['state'] == 'pixel':
-                    # env = AtariPreprocessing(
-                    #         env=env,
-                    #         frame_skip=configs['frame-skip'],
-                    #         scale_obs=configs['scale-obs'])
                     env = AtariPreprocessing(
                             env=env,
                             **configs['pre-processing'])
@@ -108,27 +101,25 @@ class GymMaker:
 
 
 
-environment = {
-    # 'name': 'ALE/Asterix-v5',
-    # 'name': 'ALE/Boxing-v5',
-    # 'name': 'ALE/Breakout-v5',
-    'name': 'ALE/Pong-v5',
-    'domain': 'atari',
-    'state': 'pixel',
-    'action': 'discrete',
-    'n-envs': 1,
-    'asynchronous': True,
-    'n-stacks': 4,
-    'frame-skip': 4,
-    'reward-clip': False,
-    'max-steps': int(27e3), # per episode
-    'max-frames': int(108e3), # per episode
-    'pre-process': ['AtariPreprocessing'],
-}
-# env = GymMaker(environment)
-#
-#
-#
+# environment = {
+#     # 'name': 'ALE/Asterix-v5',
+#     # 'name': 'ALE/Boxing-v5',
+#     # 'name': 'ALE/Breakout-v5',
+#     'name': 'ALE/Pong-v5',
+#     'domain': 'atari',
+#     'state': 'pixel',
+#     'action': 'discrete',
+#     'n-envs': 1,
+#     'asynchronous': True,
+#     'n-stacks': 4,
+#     'frame-skip': 4,
+#     'reward-clip': False,
+#     'max-steps': int(27e3), # per episode
+#     'max-frames': int(108e3), # per episode
+#     'pre-process': ['AtariPreprocessing'],
+# }
+
+
 # if __name__ == '__main__':
 #     # parser = argparse.ArgumentParser()
 #     # for k, v in environment.items():

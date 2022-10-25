@@ -41,7 +41,6 @@ configurations = {
         'expl-steps': int(10e3),
         'learn-freq': 4, # iteration
         'grad-steps': 4,
-        # 'log-freq': 0,
         'render': False,
     },
 
@@ -68,7 +67,6 @@ configurations = {
             'v-max': 10.0,
             'atom-size': 51,
             'target-update-frequency': int(200), # iteration (/n)
-            # 'target-update-frequency': int(8e3), # time-steps --> iteration
         }
     },
 
@@ -107,6 +105,7 @@ configurations = {
         'buffer-type': 'PER',
         'capacity': int(1e6),
         # 'batch-size': 32,
+        # 'batch-size': 64,
         'batch-size': 128,
     }
 

@@ -1,3 +1,8 @@
+"""
+Source: https://github.com/Curt-Park/rainbow-is-all-you-need
+"""
+
+
 # -*- coding: utf-8 -*-
 """Segment tree for Prioritized Replay Buffer."""
 
