@@ -65,7 +65,7 @@ configurations = {
             'n-steps': 20,
             'gamma': 0.99,
             'omega': 0.5, # prio-exponent
-            'beta': 0.4, # prio-weight
+            'beta': 0.4, # prio-weight --> 1
             'prio-eps': 1e-6,
             'v-min': -10.0, #
             'v-max': 10.0,

@@ -205,7 +205,7 @@ class RainbowLearner(MFRL):
                         oldJq = Jq
                 else:
                     Jq = oldJq
-                Jq = 0
+                # Jq = 0
 
                 if (I%Vf==0):
                     RainbowLT.colour = 'MAGENTA'
@@ -465,7 +465,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-200k-{environment}-X{n_envs}" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:
