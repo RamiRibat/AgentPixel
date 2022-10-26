@@ -197,15 +197,15 @@ class RainbowLearner(MFRL):
                 RainbowLT.n = T
                 RainbowLT.refresh()
 
-                # if (T>iT): # Start training after iT
-                #     self.update_buffer_beta(steps)
-                #     if (I%Lf==0):
-                #         for g in range(G):
-                #             Jq = self.train_rainbow(I)
-                #         oldJq = Jq
-                # else:
-                #     Jq = oldJq
-                Jq = 0
+                if (T>iT): # Start training after iT
+                    self.update_buffer_beta(steps)
+                    if (I%Lf==0):
+                        for g in range(G):
+                            Jq = self.train_rainbow(I)
+                        oldJq = Jq
+                else:
+                    Jq = oldJq
+                # Jq = 0
 
                 if (I%Vf==0):
                     RainbowLT.colour = 'MAGENTA'
@@ -232,7 +232,7 @@ class RainbowLearner(MFRL):
                     RainbowLT.set_postfix({'ss': sps, 'LZ': lastZ, 'VZ': f'{np.mean(VZ)}'})
                     print(f'VL={np.mean(VL)} | VZ={np.mean(VZ)}')
                     if self.WandB: wandb.log(logs, step=T)
-                    RainbowLT.colour = None #'BLACK'
+                    RainbowLT.colour = None
                     RainbowLT.refresh()
                 I += 1
 
