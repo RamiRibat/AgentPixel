@@ -197,15 +197,15 @@ class RainbowLearner(MFRL):
                 RainbowLT.n = T
                 RainbowLT.refresh()
 
-                if (T>iT): # Start training after iT
-                    self.update_buffer_beta(steps)
-                    if (I%Lf==0):
-                        for g in range(G):
-                            Jq = self.train_rainbow(I)
-                        oldJq = Jq
-                else:
-                    Jq = oldJq
-                # Jq = 0
+                # if (T>iT): # Start training after iT
+                #     self.update_buffer_beta(steps)
+                #     if (I%Lf==0):
+                #         for g in range(G):
+                #             Jq = self.train_rainbow(I)
+                #         oldJq = Jq
+                # else:
+                #     Jq = oldJq
+                Jq = 0
 
                 if (I%Vf==0):
                     RainbowLT.colour = 'MAGENTA'
@@ -229,8 +229,8 @@ class RainbowLearner(MFRL):
                     logs['time/sps                            '] = sps
                     logs['time/sps-avg                        '] = np.mean(SPSList)
                     logs['time/total-real                     '] = total_time_real
-                    RainbowLT.set_postfix({'ss': sps, 'LZ': f'{np.mean(ZList)}', 'VZ': f'{np.mean(VZ)}'})
-                    # print(f'I={I} | VL={np.mean(VL)} | VZ={np.mean(VZ)}')
+                    RainbowLT.set_postfix({'ss': sps, 'LZ': lastZ, 'VZ': f'{np.mean(VZ)}'})
+                    print(f'VL={np.mean(VL)} | VZ={np.mean(VZ)}')
                     if self.WandB: wandb.log(logs, step=T)
                     RainbowLT.colour = None #'BLACK'
                     RainbowLT.refresh()
@@ -428,7 +428,6 @@ class RainbowLearner(MFRL):
 
         return Jq
 
-
     def update_target_net(self) -> None:
         self.agent.target_net.load_state_dict(self.agent.online_net.state_dict())
 
@@ -512,9 +511,11 @@ if __name__ == "__main__":
     if seed:
         random.seed(seed)
         np.random.seed(seed)
-        T.manual_seed(seed)
+        # T.manual_seed(seed) # bad choice
+        T.manual_seed(np.random.randint(1, 10000))
         if device == 'cuda':
-            T.cuda.manual_seed(seed)
+            # T.cuda.manual_seed(seed) # bad choice
+            T.cuda.manual_seed(np.random.randint(1, 10000))
             T.backends.cudnn.enabled = True
 
     configurations = configs.configurations

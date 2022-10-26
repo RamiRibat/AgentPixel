@@ -88,7 +88,6 @@ class MFRL:
             action = self.learn_env.action_space.sample()
 
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
-        # print('observation: ', observation.shape)
 
         if self.configs['environment']['n-envs'] == 0:
             observation = np.array([observation])
@@ -114,45 +113,6 @@ class MFRL:
             mask = np.ones([max(1, n_envs)], dtype=bool)
 
         return observation, mask, Z, L, Traj, steps
-
-    def append_sard_in_buffer(
-        self,
-        observation,
-        action,
-        reward,
-        terminated):
-
-        buffer_type = self.configs['data']['buffer-type']
-        if (buffer_type == 'simple') or (buffer_type == 'per'):
-            self.buffer.store_sarsd(observation,
-                                    action,
-                                    reward,
-                                    observation_next,
-                                    terminated)
-        elif buffer_type == 'simple+nSteps':
-            self.buffer.store_sarsd(observation,
-                                    action,
-                                    reward,
-                                    observation_next,
-                                    terminated)
-            self.buffer_n.store_sarsd(observation,
-                                      action,
-                                      reward,
-                                      observation_next,
-                                      terminated)
-        elif buffer_type == 'per+nSteps':
-            self.buffer_per.store_sarsd(observation,
-                                    action,
-                                    reward,
-                                    observation_next,
-                                    terminated)
-            self.buffer_n.store_sarsd(observation,
-                                      action,
-                                      reward,
-                                      observation_next,
-                                      terminated)
-        elif buffer_type == 'pixel-per':
-            self.buffer.append_sard(observation, action, reward, terminated)
 
     def evaluate(self):
         evaluate = self.configs['evaluation']['evaluate']

@@ -105,8 +105,13 @@ class NDCQNetwork2(nn.Module):
             self.feature_layer = nn.Sequential(nn.Linear(obs_dim, configs['mlp']['arch'][0]), nn.ReLU())
             self.feature_dim = configs['mlp']['arch'][0]
 
-        self.v_net = NoisyNetwork(self.feature_dim, 1*self.atom_size, configs['mlp'])
-        self.adv_net = NoisyNetwork(self.feature_dim, self.act_dim*self.atom_size, configs['mlp'])
+        # self.v_net = NoisyNetwork(self.feature_dim, 1*self.atom_size, configs['mlp'])
+        # self.adv_net = NoisyNetwork(self.feature_dim, self.act_dim*self.atom_size, configs['mlp'])
+
+        self.fc_h_v = NoisyLinear(self.feature_dim, configs['mlp']['arch'][1], std_init=configs['mlp']['std'])
+        self.fc_h_a = NoisyLinear(self.feature_dim, configs['mlp']['arch'][1], std_init=configs['mlp']['std'])
+        self.fc_z_v = NoisyLinear(configs['mlp']['arch'][1], self.atom_size, std_init=configs['mlp']['std'])
+        self.fc_z_a = NoisyLinear(configs['mlp']['arch'][1], self.act_dim * self.atom_size, std_init=configs['mlp']['std'])
 
         self.to(device)
 
@@ -122,18 +127,24 @@ class NDCQNetwork2(nn.Module):
 
     def distribution(self, observation: T.Tensor) -> T.Tensor:
         feature = self.feature_layer(observation)
-        value = self.v_net(feature).view(-1, 1, self.atom_size)
-        advantage = self.adv_net(feature).view(-1, self.act_dim, self.atom_size)
+
+        value = self.fc_z_v( F.relu( self.fc_h_v(feature) ) ).view(-1, 1, self.atom_size)
+        advantage = self.fc_z_a( F.relu( self.fc_h_a(feature) ) ).view(-1, self.act_dim, self.atom_size)
+
         q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
         return q_atoms
 
     def reset_noise(self):
-        self.v_net.reset_noise()
-        self.adv_net.reset_noise()
+        self.fc_h_v.reset_noise()
+        self.fc_h_a.reset_noise()
+        self.fc_z_v.reset_noise()
+        self.fc_z_a.reset_noise()
 
     def _evaluation_mode(self, mode=False):
-        self.v_net._evaluation_mode(mode)
-        self.adv_net._evaluation_mode(mode)
+        self.fc_h_v.evaluation_mode = mode
+        self.fc_h_a.evaluation_mode = mode
+        self.fc_z_v.evaluation_mode = mode
+        self.fc_z_a.evaluation_mode = mode
 
 
 
