@@ -1,95 +1,82 @@
-# -*- coding: utf-8 -*-
-from collections import deque
-import random
-import atari_py
-import cv2
+import psutil
+import argparse
+import time, datetime
+from tqdm import tqdm, trange
+
 import torch
+import numpy as np
+
+import gym
+from gym.spaces import Box, Discrete, MultiDiscrete
+# from gym.wrappers import AtariPreprocessing, FrameStack
+from gym.vector.async_vector_env import AsyncVectorEnv
+from gym.vector.sync_vector_env import SyncVectorEnv
+
+from pixel.envs.wrappers import AtariPreprocessing, FrameStack
 
 
-class Env():
-  def __init__(self, configs, seed=0, device='cpu'):
-    self.device = 'cpu'
-    self.ale = atari_py.ALEInterface()
-    self.ale.setInt('random_seed', seed)
-    self.ale.setInt('max_num_frames_per_episode', 108e3)
-    self.ale.setFloat('repeat_action_probability', 0)  # Disable sticky actions
-    self.ale.setInt('frame_skip', 0)
-    self.ale.setBool('color_averaging', False)
-    self.ale.loadROM(atari_py.get_game_path('hero'))  # ROM loading must be done after setting options
-    actions = self.ale.getMinimalActionSet()
-    self.actions = dict([i, e] for i, e in zip(range(len(actions)), actions))
-    self.lives = 0  # Life counter (used in DeepMind training)
-    self.life_termination = False  # Used to check if resetting only from loss of life
-    self.window = 4  # Number of frames to concatenate
-    self.state_buffer = deque([], maxlen=4)
-    self.training = True  # Consistent with model training mode
 
-  def _get_state(self):
-    state = cv2.resize(self.ale.getScreenGrayscale(), (84, 84), interpolation=cv2.INTER_LINEAR)
-    return torch.tensor(state, dtype=torch.float32, device=self.device).div_(255)
+class AtariEnv(gym.Wrapper):
+    def __init__(
+        self,
+        env: gym.Env,
+        configs,
+        eval,
+        seed,
+        device):
 
-  def _reset_buffer(self):
-    for _ in range(self.window):
-      self.state_buffer.append(torch.zeros(84, 84, device=self.device))
+        super().__init__(env)
 
-  def reset(self):
-    if self.life_termination:
-      self.life_termination = False  # Reset flag
-      self.ale.act(0)  # Use a no-op after loss of life
-    else:
-      # Reset internals
-      self._reset_buffer()
-      self.ale.reset_game()
-      # Perform up to 30 random no-ops before starting
-      for _ in range(random.randrange(30)):
-        self.ale.act(0)  # Assumes raw action 0 is always no-op
-        if self.ale.game_over():
-          self.ale.reset_game()
-    # Process and return "initial" state
-    observation = self._get_state()
-    self.state_buffer.append(observation)
-    self.lives = self.ale.lives()
-    return torch.stack(list(self.state_buffer), 0)
+        # print('Initialize AtariEnv')
 
-  def step(self, action):
-    # Repeat action 4 times, max pool over last 2 frames
-    frame_buffer = torch.zeros(2, 84, 84, device=self.device)
-    reward, done = 0, False
-    for t in range(4):
-      reward += self.ale.act(self.actions.get(action))
-      if t == 2:
-        frame_buffer[0] = self._get_state()
-      elif t == 3:
-        frame_buffer[1] = self._get_state()
-      done = self.ale.game_over()
-      if done:
-        break
-    observation = frame_buffer.max(0)[0]
-    self.state_buffer.append(observation)
-    # Detect loss of life as terminal in training mode
-    if self.training:
-      lives = self.ale.lives()
-      if lives < self.lives and lives > 0:  # Lives > 0 for Q*bert
-        self.life_termination = not done  # Only set flag when not truly done
-        done = True
-      self.lives = lives
-    # Return state, reward, done
-    return torch.stack(list(self.state_buffer), 0), reward, done
+        self.configs = configs
+        self.eval = eval
+        self.seed = seed
+        self._device_ = device
 
-  # Uses loss of life as terminal signal
-  def train(self):
-    self.training = True
+        self._seed()
 
-  # Uses standard terminal signal
-  def eval(self):
-    self.training = False
+        self.lives = 0
+        self.life_terminated = False
 
-  def action_space(self):
-    return len(self.actions)
+    @property
+    def ale(self):
+        """Make ale as a class property to avoid serialization error."""
+        return self.env.ale
 
-  def render(self):
-    cv2.imshow('screen', self.ale.getScreenRGB()[:, :, ::-1])
-    cv2.waitKey(1)
+    def _seed(self):
+        self.env.env.env.seed(self.seed)
 
-  def close(self):
-    cv2.destroyAllWindows()
+    def reset(self, seed=None):
+        # print('RESET')
+        # return self.env.reset()
+        if self.life_terminated and not self.eval:
+            # print(f'life-termination: game-over={self.ale.game_over()}')
+            # print(f'reset-life-terminated: ale.lives={self.env.env.ale.lives()} | life-terminated={self.life_terminated}')
+            self.life_terminated = False
+            observation, _, _, _, info = self.env.env.env.step(0) # Take 1 NO-OP action only
+            self.env.frames.append(self.env.env._get_obs())
+        else: # eval or train(lives=0)
+            # print(f'non-life-termination: game-over={self.ale.game_over()}')
+            # print(f'reset-start: ale.lives={self.env.env.ale.lives()} | life-terminated={self.life_terminated}')
+            observation, info = self.env.reset() # Take 30 NO-OP actions
+        observation = np.stack(self.env.observation(None), 0)
+        # print('reset-obs: ', observation.sum(1).sum(1))
+        self.lives = self.env.env.ale.lives()
+        return observation, info
+
+    def step(self, action):
+        # return self.env.step(action)
+        observation_next, reward, terminated, truncated, info = self.env.step(action)
+        observation_next = np.stack(observation_next, 0)
+        if self.configs['reward-clip'] and not self.eval:
+            reward_clip = self.configs['reward-clip']
+            reward = np.clip(reward, -reward_clip, reward_clip)
+        self.life_terminated = self.env.env.life_terminated
+        return observation_next, reward, terminated, truncated, info
+
+    def render(self):
+        return self.env.render()
+
+    def close(self):
+        return self.env.close()

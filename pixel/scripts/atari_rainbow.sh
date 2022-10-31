@@ -18,9 +18,16 @@ python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 8 --device 'cu
 
 
 
+
+
+
 module load cuda-11.3
 
-tmux new -s atari-rainbow-s1
+
+srun -c 32 --gres=gpu:1 --mem=16GB --qos=nopreemption -p interactive --pty bash
+
+
+tmux new -s atari-derainbow-s1
 
 
 conda activate pixel

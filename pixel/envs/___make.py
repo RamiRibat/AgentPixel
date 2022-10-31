@@ -26,15 +26,20 @@ from pixel.envs.atari_env import AtariEnv
 
 
 class GymMaker:
-    def __init__(self, configs, eval=False, seed=0, device=None):
+    def __init__(self, configs, eval=False, device=None, seed=0):
         # print('Initialize GymMaker')
         self.configs = configs
         self.eval = eval
-        self.seed = seed
         self._device_ = device
+        self.seed = seed
         self.name = configs['name']
-        self.env = self._gym_make(configs, eval, seed, device)
-
+        self.env = self._gym_make(configs, eval, device, seed)
+        # if configs['domain'] == 'atari':
+        #     self.observation_space = self.env.observation_space
+        #     self.observation_dim = self.env.observation_dim
+        #     self.action_space = self.env.action_space
+        #     self.action_dim = self.env.action_dim
+        # else:
         self.observation_space = self.env.observation_space
         if configs['state'] == 'pixel':
             self.observation_dim = 'pixel'
@@ -48,27 +53,30 @@ class GymMaker:
         elif isinstance(self.env.single_action_space, Discrete):
             self.action_dim = self.env.single_action_space.n
 
-    def _gym_make(self, configs, eval, seed, device):
+        # self._seed_env()
+
+        # self.lives = 0
+        # self.life_terminal = False
+
+    def _gym_make(self, configs, eval, device, seed):
         def create_env():
             def _make():
-                env = gym.make(
-                        id=configs['name'],
-                        frameskip=configs['frameskip'],
-                        max_num_frames_per_episode=configs['max-frames'],
-                        repeat_action_probability=configs['repeat-action-probability'],
-                        )
-
-                if (configs['domain'] == 'atari') and (configs['state'] == 'pixel'):
-                    env = AtariPreprocessing(
-                            env=env,
-                            **configs['pre-processing'])
-                    env = FrameStack(
-                            env=env,
-                            num_stack=configs['n-stacks'])
-                    env = AtariEnv(env=env, configs=configs, eval=eval, seed=seed, device=device)
+                if configs['domain'] == 'atari':
+                    env = AtariEnv(configs, eval, device, seed)
+                else:
+                    env = gym.make(
+                            id=configs['name'],
+                            frameskip=configs['frameskip'],
+                            max_num_frames_per_episode=configs['max-frames'],
+                            repeat_action_probability=configs['repeat-action-probability'],
+                            )
                 return env
             return _make
 
+        # if configs['domain'] == 'atari':
+        #     env = create_env()
+        #     return env()
+        # else:
         if (configs['n-envs'] == 0) or eval:
             if eval: configs['pre-processing']['terminal_on_life_loss'] = False
             env = create_env()

@@ -76,6 +76,7 @@ class SegmentTree: # for PER
         self._update_prio(self.idx+self.tree_start, prio)
         self.idx = (self.idx+1)%self.tree_capacity # FIFO
         self.full = self.full or self.idx==0
+        self.max = max(prio, self.max)
 
     def _retrieve(self, idxs, prios):
         children_idxs = (idxs * 2 + np.expand_dims([1, 2], axis=1))
@@ -147,8 +148,9 @@ class ReplayBuffer:
         self.transitions._update_prios(idxs, prios)
 
     def append_sard(self, s, a, r, d) -> None:
+        pixel = self.configs['obs-type'] == 'pixel'
         s = s[-1] if self.history > 1 else s
-        if self.configs['obs-type'] == 'pixel': s = s*255
+        if pixel: s = (s*255).astype(np.uint8)
         sard = (self.t, s, a, r, d)
         if self.configs['buffer-type'] == 'PER':
             self.transitions.append(sard, self.transitions.max)
@@ -160,8 +162,12 @@ class ReplayBuffer:
         pixel = self.configs['obs-type'] == 'pixel'
         for i in range(len(mask)):
             if mask[i]:
-                sard = (self.t, s[i][-1]*255 if pixel else s[i][-1], a[i], r[i], d[i]) if self.history > 1\
-                else (self.t, s[i]*255 if pixel else s[i], a[i], r[i], d[i])
+                # sard = (self.t, s[i][-1]*255 if pixel else s[i][-1], a[i], r[i], d[i]) if self.history > 1\
+                # else (self.t, s[i]*255 if pixel else s[i], a[i], r[i], d[i])
+                if pixel:
+                    sard = (self.t, ( (s[i][-1] if self.history > 1 else s[i]) *255).astype(np.uint8), a[i], r[i], d[i])
+                else:
+                    sard= (self.t, s[i][-1] if self.history > 1 else s[i], a[i], a[i], r[i], d[i])
                 if self.configs['buffer-type'] == 'PER':
                     self.transitions.append(sard, self.transitions.max)
                 else:
@@ -171,7 +177,9 @@ class ReplayBuffer:
     def sample_batch(self, batch_size) -> Dict:
         if self.configs['buffer-type'] == 'PER':
             total_prios = self.transitions.total()
-            segment_batch = self._sample_batch_from_segments(batch_size, total_prios)
+            # print('total-prios: ', total_prios)
+            # segment_batch = self._sample_batch_from_segments(batch_size, total_prios)
+            segment_batch = self._sample_batch_from_segments2(batch_size, total_prios)
             probs = segment_batch['probs'] / total_prios
             capacity = self.capacity if self.transitions.full else self.transitions.idx
             weights = (capacity*probs) ** -self.beta
@@ -268,14 +276,14 @@ class ReplayBuffer:
         if self.configs['obs-type'] == 'pixel':
             observations = T.tensor(transitions['observation'][:, :self.history], dtype=T.float32, device=self._device_).div_(255)
             observations_next = T.tensor(transitions['observation'][:, self.n_steps:self.n_steps+self.history], dtype=T.float32, device=self._device_).div_(255)
-        elif self.configs['obs-type'] == 'numerical':
-            observations = T.tensor(np.copy(transitions['observation'][:, :self.history]), dtype=T.float32, device=self._device_)
-            observations_next = T.tensor(np.copy(transitions['observation'][:, self.n_steps:self.n_steps+self.history]), dtype=T.float32, device=self._device_)
-        actions = T.tensor(np.copy(transitions['action'][:, self.history-1]), dtype=T.int64, device=self._device_)#.view(-1,1)
+        # elif self.configs['obs-type'] == 'numerical':
+        #     observations = T.tensor(np.copy(transitions['observation'][:, :self.history]), dtype=T.float32, device=self._device_)
+        #     observations_next = T.tensor(np.copy(transitions['observation'][:, self.n_steps:self.n_steps+self.history]), dtype=T.float32, device=self._device_)
+        actions = T.tensor(np.copy(transitions['action'][:, self.history-1]), dtype=T.int64, device=self._device_)
         rewards = T.tensor(np.copy(transitions['reward'][:, self.history-1:-1]), dtype=T.float32, device=self._device_)
-        returns = T.matmul(rewards, self.gamma_n)#.view(-1,1)
-        # terminals = T.tensor(np.copy(transitions['terminal'][:, self.history+self.n_steps-1]), dtype=T.float32, device=self._device_)#.view(-1,1)
-        terminals = T.tensor(np.expand_dims(transitions['terminal'][:, self.history + self.n_steps - 1], axis=1), dtype=T.float32, device=self._device_)
+        returns = T.matmul(rewards, self.gamma_n)
+        # terminals = T.tensor(np.expand_dims(transitions['terminal'][:, self.history + self.n_steps - 1], axis=1), dtype=T.float32, device=self._device_)
+        terminals = T.tensor(np.copy(transitions['terminal'][:, self.history + self.n_steps - 1]), dtype=T.float32, device=self._device_)
         batch = dict(
             probs=probs,
             idxs=idxs,

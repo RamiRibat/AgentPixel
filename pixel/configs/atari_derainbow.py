@@ -15,21 +15,23 @@ configurations = {
 
     'environment': {
         # 'name': 'ALE/Pong-v5',
-        'name': 'ALE/Freeway-v5',
+        'name': 'ALE/Hero-v5',
         'domain': 'atari',
         'state': 'pixel',
         'action': 'discrete',
         'n-envs': [0],
         'asynchronous': True,
+        'frameskip': 1,
         'n-stacks': 4,
         'reward-clip': 1,
+        'repeat-action-probability': 0,
         'max-steps': int(27e3), # per episode
         'max-frames': int(108e3), # per episode
         'pre-processing': {
             'noop_max': 30,
             'frame_skip': 4,
             'screen_size': 84,
-            'terminal_on_life_loss': True,
+            'terminal_on_life_loss': True, # training only
             'grayscale_obs': True,
             'grayscale_newaxis': False,
             'scale_obs': True, # default=False
@@ -51,7 +53,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(1e4), # iteration X n-envs
-        'episodes': 5,
+        'episodes': 2,
         'render': False,
     },
 

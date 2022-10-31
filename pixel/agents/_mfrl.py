@@ -29,9 +29,9 @@ class MFRL:
     def _set_env(self):
         env_cfgs = self.configs['environment']
 
-        self.learn_env = GymMaker(env_cfgs)
+        self.learn_env = GymMaker(env_cfgs, eval=False, seed=self.seed, device=self._device_)
         if self.configs['evaluation']['evaluate']:
-            self.eval_env = GymMaker(env_cfgs, eval=True)
+            self.eval_env = GymMaker(env_cfgs, eval=True, seed=self.seed, device=self._device_)
 
         self.obs_dim = self.learn_env.observation_dim
         self.act_dim = self.learn_env.action_dim
@@ -76,7 +76,7 @@ class MFRL:
             Z, S, L, Traj = 0, 0, 0, Traj+1
             observation, info = self.learn_env.reset()
 
-        return observation, Z, L, Traj
+        return observation, Z, L, Traj, terminated, truncated
 
     def interact_vec(self, observation, mask, Z, L, T, Traj, epsilon=0.001):
         n_envs = self.configs['environment']['n-envs']
@@ -87,7 +87,14 @@ class MFRL:
         else:
             action = self.learn_env.action_space.sample()
 
+        # print('observation: ', observation.shape)
+        # print('action: ', action.shape)
+
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
+
+        # print('observation_next: ', observation_next.shape)
+        # print('reward: ', reward.shape)
+        # print('terminated: ', terminated.shape)
 
         if self.configs['environment']['n-envs'] == 0:
             observation = np.array([observation])
@@ -107,7 +114,6 @@ class MFRL:
         mask[mask] = ~truncated[mask]
 
         if mask.sum()==0:
-            # print('reset')
             Z, S, L, Traj = 0, 0, 0, Traj+1
             observation, info = self.learn_env.reset()
             mask = np.ones([max(1, n_envs)], dtype=bool)
@@ -117,11 +123,12 @@ class MFRL:
     def evaluate(self):
         evaluate = self.configs['evaluation']['evaluate']
         if evaluate:
-            # print('\n[ Evaluation ]')
+            # print('\n[ Evaluation ] -->')
             EE = self.configs['evaluation']['episodes']
             MAX_H = None
             VZ, VS, VL = [], [], []
             for ee in range(1, EE+1):
+                # seed = self.seed + np.random.randint(1, 10000)
                 Z, S, L = 0, 0, 0
                 observation, info = self.eval_env.reset()
                 while True:
@@ -134,5 +141,6 @@ class MFRL:
                     if terminated or truncated: break
                 VZ.append(Z)
                 VL.append(L)
-        self.eval_env.close()
+            self.eval_env.close()
+            # print('<-- [ Evaluation ]')
         return VZ, VS, VL

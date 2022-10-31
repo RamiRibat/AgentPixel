@@ -3,24 +3,9 @@
 import torch as T
 nn, F = T.nn, T.nn.functional
 
-from pixel.networks.dnns import Network, NoisyNetwork, Encoder
+from pixel.networks.dnns import NoisyNetwork, Encoder
 from pixel.networks.dnns import NoisyLinear
 
-
-class QNetwork(nn.Module):
-    def __init__(self, obs_dim, act_dim, net_configs, seed, device):
-        print('Initialize QNetwork')
-        super(QNetwork, self).__init__()
-        optimizer, lr = 'T.optim.' + net_configs['optimizer'], net_configs['lr']
-        self.qnet = Network(obs_dim, act_dim, net_configs)
-        self.to(device)
-        self.optimizer = eval(optimizer)(self.parameters(), lr)
-
-    def forward(self, observation: T.Tensor) -> T.Tensor:
-        # print('q-observation: ', observation.shape)
-        q = self.qnet(observation)
-        # print('q-value: ', q.shape)
-        return q
 
 
 class NDCQNetwork(nn.Module):
@@ -50,21 +35,25 @@ class NDCQNetwork(nn.Module):
             self.feature_dim = configs['mlp']['arch'][0]
         self.v_net = NoisyNetwork(self.feature_dim, 1*self.atom_size, configs['mlp'])
         self.adv_net = NoisyNetwork(self.feature_dim, self.act_dim*self.atom_size, configs['mlp'])
-        # print('NDCQNetwork: ', self)
+
         self.to(device)
 
         self.optimizer = eval(optimizer)(self.parameters(), lr=lr, eps=eps)
 
     def forward(self, observation: T.Tensor) -> T.Tensor:
         distribution = self.distribution(observation)
+        print(f'QN.forward: distribution={distribution.shape}') # [N, A, Z]
         q = T.sum(distribution*self.support, dim=2)
+        print(f'QN.q: q={q.shape}') # [N, A, Z]
         return q
 
     def distribution(self, observation: T.Tensor) -> T.Tensor:
+        print(f'QN.distribution: observation={observation.shape}') # [N, Stacks, H, W]
         feature = self.feature_layer(observation)
         value = self.v_net(feature).view(-1, 1, self.atom_size)
         advantage = self.adv_net(feature).view(-1, self.act_dim, self.atom_size)
         q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
+        print(f'QN.distribution: q_atoms={q_atoms.shape}') # [N, A, Z]
         return F.softmax(q_atoms, dim=-1).clamp(min=1e-3)
 
     def reset_noise(self):
@@ -78,14 +67,13 @@ class NDCQNetwork(nn.Module):
 
 
 
-
 class NDCQNetwork2(nn.Module):
     def __init__(
         self,
         obs_dim, act_dim,
         configs, hyper_para,
         seed = 0, device='cpu'):
-        # print('Initialize NDCQNetwork')
+        print('Initialize NDCQNetwork')
         super(NDCQNetwork2, self).__init__()
 
         optimizer = 'T.optim.' + configs['optimizer']['type']
@@ -105,60 +93,53 @@ class NDCQNetwork2(nn.Module):
             self.feature_layer = nn.Sequential(nn.Linear(obs_dim, configs['mlp']['arch'][0]), nn.ReLU())
             self.feature_dim = configs['mlp']['arch'][0]
 
-        # self.v_net = NoisyNetwork(self.feature_dim, 1*self.atom_size, configs['mlp'])
-        # self.adv_net = NoisyNetwork(self.feature_dim, self.act_dim*self.atom_size, configs['mlp'])
-
-        self.fc_h_v = NoisyLinear(self.feature_dim, configs['mlp']['arch'][1], std_init=configs['mlp']['std'])
-        self.fc_h_a = NoisyLinear(self.feature_dim, configs['mlp']['arch'][1], std_init=configs['mlp']['std'])
-        self.fc_z_v = NoisyLinear(configs['mlp']['arch'][1], self.atom_size, std_init=configs['mlp']['std'])
-        self.fc_z_a = NoisyLinear(configs['mlp']['arch'][1], self.act_dim * self.atom_size, std_init=configs['mlp']['std'])
-
+        self.v_net   = NoisyNetwork(self.feature_dim, 1*self.atom_size,            configs['mlp'])
+        self.adv_net = NoisyNetwork(self.feature_dim, self.act_dim*self.atom_size, configs['mlp'])
+        
         self.to(device)
 
         self.optimizer = eval(optimizer)(self.parameters(), lr=lr, eps=eps)
 
-    def forward(self, observation: T.Tensor, log = False) -> T.Tensor:
+    def forward(self, observation: T.Tensor) -> T.Tensor:
+
+        q_probs = self.q_probs(observation)
+        q_values = (q_probs * self.support).sum(2)
+        q_actions = q_values.argmax(1)
+
+        # print(f'QN.forward: q_probs={q_probs.shape}') # [N, A, Z]
+        # print(f'QN.forward: q_values={q_values.shape}') # [N, A]
+        # print(f'QN.forward: q_actions={q_actions.shape}') # [N]
+
+        return q_values, q_actions
+
+    def q_probs(self, observation: T.Tensor, action: T.Tensor = None, log = False) -> T.Tensor:
         q_atoms = self.distribution(observation)
+        # print(f'QN.q_probs: observation={observation.shape}') # [N, Stacks, H, W]
+        # print(f'QN.q_probs: q_atoms={q_atoms.shape}') # [N, A, Z]
         if log:
-            q = F.log_softmax(q_atoms, dim=2)
+            log_probs = F.log_softmax(q_atoms, dim=2)
+            if action is None:
+                return log_probs
+            else:
+                return log_probs[range(action.shape[0]), action]
         else:
-            q = F.softmax(q_atoms, dim=2)
-        return q
+            probs = F.softmax(q_atoms, dim=2)
+            if action is None:
+                return probs
+            else:
+                return probs[range(action.shape[0]), action]
 
     def distribution(self, observation: T.Tensor) -> T.Tensor:
         feature = self.feature_layer(observation)
-
-        value = self.fc_z_v( F.relu( self.fc_h_v(feature) ) ).view(-1, 1, self.atom_size)
-        advantage = self.fc_z_a( F.relu( self.fc_h_a(feature) ) ).view(-1, self.act_dim, self.atom_size)
-
+        value = self.v_net(feature).view(-1, 1, self.atom_size)
+        advantage = self.adv_net(feature).view(-1, self.act_dim, self.atom_size)
         q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
         return q_atoms
 
     def reset_noise(self):
-        self.fc_h_v.reset_noise()
-        self.fc_h_a.reset_noise()
-        self.fc_z_v.reset_noise()
-        self.fc_z_a.reset_noise()
+        self.v_net.reset_noise()
+        self.adv_net.reset_noise()
 
     def _evaluation_mode(self, mode=False):
-        self.fc_h_v.evaluation_mode = mode
-        self.fc_h_a.evaluation_mode = mode
-        self.fc_z_v.evaluation_mode = mode
-        self.fc_z_a.evaluation_mode = mode
-
-
-
-
-#
-# class SoftQNetworks(nn.Module):
-#     def __init__(self, obs_dim, act_dim, net_configs, seed, device):
-#         super(QNetwork, self).__init__()
-#         optimizer, lr = 'T.optim.' + net_configs['optimizer'], net_configs['lr']
-#         self.q1 = Network(obs_dim, act_dim, net_configs)
-#         self.q2 = Network(obs_dim, act_dim, net_configs)
-#         self.QNets = [self.q1, self.q2]
-#         self.to(device)
-#         self.optimizer = eval(optimizer)(self.parameters(), lr)
-#
-#     def forward(self, observation):
-#         return tuple(Q(observation) for Q in self.QNets)
+        self.v_net._evaluation_mode(mode)
+        self.adv_net._evaluation_mode(mode)
