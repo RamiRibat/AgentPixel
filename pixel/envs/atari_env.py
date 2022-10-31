@@ -52,16 +52,13 @@ class AtariEnv(gym.Wrapper):
         # return self.env.reset()
         if self.life_terminated and not self.eval:
             # print(f'life-termination: game-over={self.ale.game_over()}')
-            # print(f'reset-life-terminated: ale.lives={self.env.env.ale.lives()} | life-terminated={self.life_terminated}')
             self.life_terminated = False
             observation, _, _, _, info = self.env.env.env.step(0) # Take 1 NO-OP action only
             self.env.frames.append(self.env.env._get_obs())
         else: # eval or train(lives=0)
             # print(f'non-life-termination: game-over={self.ale.game_over()}')
-            # print(f'reset-start: ale.lives={self.env.env.ale.lives()} | life-terminated={self.life_terminated}')
             observation, info = self.env.reset() # Take 30 NO-OP actions
         observation = np.stack(self.env.observation(None), 0)
-        # print('reset-obs: ', observation.sum(1).sum(1))
         self.lives = self.env.env.ale.lives()
         return observation, info
 
