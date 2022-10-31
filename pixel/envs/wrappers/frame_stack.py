@@ -166,7 +166,7 @@ class FrameStack(gym.ObservationWrapper):
         assert len(self.frames) == self.num_stack, (len(self.frames), self.num_stack)
         return LazyFrames(list(self.frames), self.lz4_compress)
 
-    def step(self, action):
+    def step(self, action, single_frame = False):
         """Steps through the environment, appending the observation to the frame buffer.
 
         Args:
@@ -175,7 +175,7 @@ class FrameStack(gym.ObservationWrapper):
         Returns:
             Stacked observations, reward, terminated, truncated, and information from the environment
         """
-        observation, reward, terminated, truncated, info = self.env.step(action)
+        observation, reward, terminated, truncated, info = self.env.step(action, single_frame = False)
         self.frames.append(observation)
         return self.observation(None), reward, terminated, truncated, info
 

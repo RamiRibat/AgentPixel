@@ -189,8 +189,7 @@ class RainbowLearner(MFRL):
             T, I = 0, 0
             while T<LT:
                 # print('observation: ', observation.shape)
-                # if (I%Lf==0):
-                #     self.agent.online_net.reset_noise()
+                if (I%Lf==0): self.agent.online_net.reset_noise()
 
                 # observation, Z, L, Traj_new, terminated, truncated = self.interact(observation, Z, L, T, Traj)
                 observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj)
@@ -208,7 +207,7 @@ class RainbowLearner(MFRL):
                 T += steps # vec
 
                 RainbowLT.n = T
-                RainbowLT.set_postfix({'LL': lastL, 'LZ': lastZ})
+                RainbowLT.set_postfix({'Traj': Traj, 'LL': lastL, 'LZ': lastZ})
                 RainbowLT.refresh()
 
                 if (T>iT): # Start training after iT
@@ -296,8 +295,8 @@ class RainbowLearner(MFRL):
 
         if ((I)%TUf == 0): self.update_target_net()
 
-        self.agent.online_net.reset_noise()
-        self.agent.target_net.reset_noise()
+        # self.agent.online_net.reset_noise()
+        # self.agent.target_net.reset_noise()
 
         # print('<--[ Training ]')
 
@@ -412,6 +411,7 @@ class RainbowLearner(MFRL):
         with T.no_grad():
             # Nth obs_next probs
             q_values, q_actions = self.agent.online_net(observations)
+            self.agent.target_net.reset_noise()
             q_probs_next = self.agent.target_net.q_probs(observations_next, q_actions)
 
             # Tz (Belleman op)
@@ -481,7 +481,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-ii" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:

@@ -124,48 +124,40 @@ class AtariPreprocessing(gym.Wrapper):
         """Make ale as a class property to avoid serialization error."""
         return self.env.unwrapped.ale
 
-    def step(self, action):
+    def step(self, action, single_frame = False):
         """Applies the preprocessing for an :meth:`env.step`."""
         # print('AP-action: ', action)
         total_reward, terminated, truncated, info = 0.0, False, False, {}
 
-        for t in range(self.frame_skip):
+        Frames = 1 if single_frame else self.frame_skip
+
+        for t in range(Frames):
             _, reward, terminated, truncated, info = self.env.step(action)
             total_reward += reward
             self.game_over = terminated
 
-            # if self.terminal_on_life_loss:
-            #     new_lives = self.ale.lives()
-            #     terminated = terminated or new_lives < self.lives
-            #     self.life_terminated = terminated
-            #     self.game_over = terminated
-            #     self.lives = new_lives
-
             if terminated or truncated:
                 break
 
-            if t == self.frame_skip - 2: # t = 2(3)
+            if t == Frames - 2: # t = 2(3)
                 if self.grayscale_obs:
                     self.ale.getScreenGrayscale(self.obs_buffer[1])
                 else:
                     self.ale.getScreenRGB(self.obs_buffer[1])
-            elif t == self.frame_skip - 1: # t = 3(4)
+            elif t == Frames - 1: # t = 3(4)
                 if self.grayscale_obs:
                     self.ale.getScreenGrayscale(self.obs_buffer[0])
                 else:
                     self.ale.getScreenRGB(self.obs_buffer[0])
 
-        if self.terminal_on_life_loss:
-        #     new_lives = self.ale.lives()
-        #     self.life_terminated = new_lives < self.lives and new_lives > 0
-        #     terminated = terminated or self.life_terminated
-        #     self.game_over = terminated
-        #     self.lives = new_lives
+        if self.terminal_on_life_loss and not single_frame:
+            # print(f'check if life-terminated; given terminated={terminated}:')
             new_lives = self.ale.lives()
+            # print(f'new_lives={new_lives} | lives={self.lives}')
             if new_lives < self.lives and new_lives > 0:
                 self.life_terminated = not terminated
                 terminated = True
-                self.lives = new_lives
+            self.lives = new_lives
 
         return self._get_obs(), total_reward, terminated, truncated, info
 
@@ -213,6 +205,7 @@ class AtariPreprocessing(gym.Wrapper):
 
         if self.grayscale_obs and self.grayscale_newaxis:
             obs = np.expand_dims(obs, axis=-1)  # Add a channel axis
+
         return obs
 
     # def train(self):

@@ -87,12 +87,12 @@ class MFRL:
         else:
             action = self.learn_env.action_space.sample()
 
-        # print('observation: ', observation.shape)
-        # print('action: ', action.shape)
+        # print('interact.observation: ', observation.sum(1).sum(1))
+        # print('action: ', action)
 
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
 
-        # print('observation_next: ', observation_next.shape)
+        # print('interact.observation_next: ', observation_next.sum(1).sum(1))
         # print('reward: ', reward.shape)
         # print('terminated: ', terminated.shape)
 

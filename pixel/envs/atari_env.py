@@ -48,28 +48,30 @@ class AtariEnv(gym.Wrapper):
         self.env.env.env.seed(self.seed)
 
     def reset(self, seed=None):
-        # print('RESET')
-        # return self.env.reset()
+        # print(f'RESET | lives={self.lives} | game-over={self.ale.game_over()}')
+
         if self.life_terminated and not self.eval:
-            # print(f'life-termination: game-over={self.ale.game_over()}')
-            self.life_terminated = False
-            observation, _, _, _, info = self.env.env.env.step(0) # Take 1 NO-OP action only
-            self.env.frames.append(self.env.env._get_obs())
+            # print(f'life-termination')
+            self.env.env.life_terminated = False
+            observation, _, _, _, info = self.env.step(0, single_frame = True) # Take 1 NO-OP action only
         else: # eval or train(lives=0)
-            # print(f'non-life-termination: game-over={self.ale.game_over()}')
+            # print(f'non-life-termination')
             observation, info = self.env.reset() # Take 30 NO-OP actions
+
         observation = np.stack(self.env.observation(None), 0)
-        self.lives = self.env.env.ale.lives()
+        # print(f'reset.observation: {observation.sum(1).sum(1)}')
+        self.env.env.lives = self.env.env.ale.lives()
         return observation, info
 
-    def step(self, action):
+    def step(self, action, single_frame = False):
         # return self.env.step(action)
-        observation_next, reward, terminated, truncated, info = self.env.step(action)
+        observation_next, reward, terminated, truncated, info = self.env.step(action, single_frame = False)
         observation_next = np.stack(observation_next, 0)
         if self.configs['reward-clip'] and not self.eval:
             reward_clip = self.configs['reward-clip']
             reward = np.clip(reward, -reward_clip, reward_clip)
         self.life_terminated = self.env.env.life_terminated
+        self.lives = self.env.env.ale.lives()
         return observation_next, reward, terminated, truncated, info
 
     def render(self):
