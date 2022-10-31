@@ -134,12 +134,12 @@ class AtariPreprocessing(gym.Wrapper):
             total_reward += reward
             self.game_over = terminated
 
-            # if self.terminal_on_life_loss:
-            #     new_lives = self.ale.lives()
-            #     terminated = terminated or new_lives < self.lives
-            #     self.life_terminated = terminated
-            #     self.game_over = terminated
-            #     self.lives = new_lives
+            if self.terminal_on_life_loss:
+                new_lives = self.ale.lives()
+                terminated = terminated or new_lives < self.lives
+                self.life_terminated = terminated
+                self.game_over = terminated
+                self.lives = new_lives
 
             if terminated or truncated:
                 break
@@ -155,12 +155,12 @@ class AtariPreprocessing(gym.Wrapper):
                 else:
                     self.ale.getScreenRGB(self.obs_buffer[0])
 
-        if self.terminal_on_life_loss:
-            new_lives = self.ale.lives()
-            self.life_terminated = new_lives < self.lives and new_lives > 0
-            terminated = terminated or self.life_terminated
-            self.game_over = terminated
-            self.lives = new_lives
+        # if self.terminal_on_life_loss:
+        #     new_lives = self.ale.lives()
+        #     self.life_terminated = new_lives < self.lives and new_lives > 0
+        #     terminated = terminated or self.life_terminated
+        #     self.game_over = terminated
+        #     self.lives = new_lives
         #     new_lives = self.ale.lives()
         #     if new_lives < self.lives and new_lives > 0:
         #         self.life_terminated = not terminated
