@@ -41,7 +41,7 @@ conda activate pixel
 python -m pixel.run --alg DERainbow --env ALE/Hero-v5 --device 'cuda' --wb --seed
 
 conda activate pixel
-python -m pixel.run --alg DERainbow --env ALE/Qbert-v5 --device 'cuda' --wb --seed
+python -m pixel.run --alg DERainbow --env ALE/Pong-v5 --device 'cuda' --wb --seed
 
 conda activate pixel
-python -m pixel.run --alg DERainbow --env ALE/RoadRunner-v5 --device 'cuda' --wb --seed
+python -m pixel.run --alg DERainbow --env ALE/Qbert-v5 --device 'cuda' --wb --seed

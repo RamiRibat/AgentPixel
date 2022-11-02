@@ -96,12 +96,16 @@ class MFRL:
         # print('reward: ', reward.shape)
         # print('terminated: ', terminated.shape)
 
+        # print('1.observation: ', observation.sum())
+
         if self.configs['environment']['n-envs'] == 0:
             observation = np.array([observation])
             action = np.array([action])
             reward = np.array([reward])
             terminated = np.array([terminated])
             truncated = np.array([truncated])
+
+        # print('2.observation: ', observation.sum())
 
         self.buffer.append_sard_vec(observation, action, reward, terminated, mask)
 
