@@ -23,10 +23,12 @@ class NoisyLinear(nn.Module):
 
     def forward(self, x: T.Tensor) -> T.Tensor:
         if self.evaluation_mode:
+            # print('nl-eval-mode')
             return F.linear(x,
                             self.weight_mu,
                             self.bias_mu)
         else:
+            # print('nl-train-mode')
             return F.linear(x,
                             self.weight_mu + self.weight_sigma * self.weight_epsilon,
                             self.bias_mu   + self.bias_sigma   * self.bias_epsilon)
@@ -52,7 +54,7 @@ class NoisyLinear(nn.Module):
 
 
 # Factorised NoisyLinear layer with bias
-class NoisyLinear1(nn.Module):
+class NoisyLinear3(nn.Module):
   def __init__(self, in_features, out_features, std_init=0.5):
     super(NoisyLinear, self).__init__()
     self.in_features = in_features

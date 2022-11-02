@@ -14,67 +14,8 @@ class NDCQNetwork(nn.Module):
         obs_dim, act_dim,
         configs, hyper_para,
         seed = 0, device='cpu'):
-        # print('Initialize NDCQNetwork')
-        super(NDCQNetwork, self).__init__()
-
-        optimizer = 'T.optim.' + configs['optimizer']['type']
-        lr = configs['optimizer']['lr']
-        eps = configs['optimizer']['eps']
-
-        self.act_dim, self.atom_size = act_dim, hyper_para['atom-size']
-        self.support = T.linspace(
-                            hyper_para['v-min'],
-                            hyper_para['v-max'],
-                            hyper_para['atom-size']).to(device)
-
-        if obs_dim == 'pixel':
-            self.feature_layer = Encoder(hyper_para['history'], configs['encoder'])
-            self.feature_dim = self.feature_layer.feature_dim
-        else:
-            self.feature_layer = nn.Sequential(nn.Linear(obs_dim, configs['mlp']['arch'][0]), nn.ReLU())
-            self.feature_dim = configs['mlp']['arch'][0]
-        self.v_net = NoisyNetwork(self.feature_dim, 1*self.atom_size, configs['mlp'])
-        self.adv_net = NoisyNetwork(self.feature_dim, self.act_dim*self.atom_size, configs['mlp'])
-
-        self.to(device)
-
-        self.optimizer = eval(optimizer)(self.parameters(), lr=lr, eps=eps)
-
-    def forward(self, observation: T.Tensor) -> T.Tensor:
-        distribution = self.distribution(observation)
-        print(f'QN.forward: distribution={distribution.shape}') # [N, A, Z]
-        q = T.sum(distribution*self.support, dim=2)
-        print(f'QN.q: q={q.shape}') # [N, A, Z]
-        return q
-
-    def distribution(self, observation: T.Tensor) -> T.Tensor:
-        print(f'QN.distribution: observation={observation.shape}') # [N, Stacks, H, W]
-        feature = self.feature_layer(observation)
-        value = self.v_net(feature).view(-1, 1, self.atom_size)
-        advantage = self.adv_net(feature).view(-1, self.act_dim, self.atom_size)
-        q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
-        print(f'QN.distribution: q_atoms={q_atoms.shape}') # [N, A, Z]
-        return F.softmax(q_atoms, dim=-1).clamp(min=1e-3)
-
-    def reset_noise(self):
-        self.v_net.reset_noise()
-        self.adv_net.reset_noise()
-
-    def _evaluation_mode(self, mode=False):
-        self.v_net._evaluation_mode(mode)
-        self.adv_net._evaluation_mode(mode)
-
-
-
-
-class NDCQNetwork2(nn.Module):
-    def __init__(
-        self,
-        obs_dim, act_dim,
-        configs, hyper_para,
-        seed = 0, device='cpu'):
         print('Initialize NDCQNetwork')
-        super(NDCQNetwork2, self).__init__()
+        super(NDCQNetwork, self).__init__()
 
         optimizer = 'T.optim.' + configs['optimizer']['type']
         lr = configs['optimizer']['lr']
@@ -95,7 +36,7 @@ class NDCQNetwork2(nn.Module):
 
         self.v_net   = NoisyNetwork(self.feature_dim, 1*self.atom_size,            configs['mlp'])
         self.adv_net = NoisyNetwork(self.feature_dim, self.act_dim*self.atom_size, configs['mlp'])
-        
+
         self.to(device)
 
         self.optimizer = eval(optimizer)(self.parameters(), lr=lr, eps=eps)
@@ -143,3 +84,76 @@ class NDCQNetwork2(nn.Module):
     def _evaluation_mode(self, mode=False):
         self.v_net._evaluation_mode(mode)
         self.adv_net._evaluation_mode(mode)
+
+
+
+
+class NDCQNetwork3(nn.Module):
+    def __init__(
+        self,
+        obs_dim, act_dim,
+        configs, hyper_para,
+        seed = 0, device='cpu'):
+        print('Initialize NDCQNetwork3')
+        super(NDCQNetwork3, self).__init__()
+
+        optimizer = 'T.optim.' + configs['optimizer']['type']
+        lr = configs['optimizer']['lr']
+        eps = configs['optimizer']['eps']
+
+        self.act_dim, self.atom_size = act_dim, hyper_para['atom-size']
+        self.support = T.linspace(
+                            hyper_para['v-min'],
+                            hyper_para['v-max'],
+                            hyper_para['atom-size']).to(device)
+
+        if obs_dim == 'pixel':
+            self.feature_layer = Encoder(hyper_para['history'], configs['encoder'])
+            self.feature_dim = self.feature_layer.feature_dim
+        else:
+            self.feature_layer = nn.Sequential(nn.Linear(obs_dim, configs['mlp']['arch'][0]), nn.ReLU())
+            self.feature_dim = configs['mlp']['arch'][0]
+
+        # self.v_net = NoisyNetwork(self.feature_dim, 1*self.atom_size, configs['mlp'])
+        # self.adv_net = NoisyNetwork(self.feature_dim, self.act_dim*self.atom_size, configs['mlp'])
+
+        self.fc_h_v = NoisyLinear(self.feature_dim, configs['mlp']['arch'][1], std_init=configs['mlp']['std'])
+        self.fc_h_a = NoisyLinear(self.feature_dim, configs['mlp']['arch'][1], std_init=configs['mlp']['std'])
+        self.fc_z_v = NoisyLinear(configs['mlp']['arch'][1], self.atom_size, std_init=configs['mlp']['std'])
+        self.fc_z_a = NoisyLinear(configs['mlp']['arch'][1], self.act_dim * self.atom_size, std_init=configs['mlp']['std'])
+
+        self.to(device)
+
+        self.optimizer = eval(optimizer)(self.parameters(), lr=lr, eps=eps)
+
+    def forward(self, observation: T.Tensor, log = False) -> T.Tensor:
+        q_atoms = self.distribution(observation)
+        if log:
+            q = F.log_softmax(q_atoms, dim=2)
+        else:
+            q = F.softmax(q_atoms, dim=2)
+        return q
+
+    def distribution(self, observation: T.Tensor) -> T.Tensor:
+        feature = self.feature_layer(observation)
+        # print('q-distribution-feature: ', feature.shape)
+
+        value = self.fc_z_v( F.relu( self.fc_h_v(feature) ) ).view(-1, 1, self.atom_size)
+        advantage = self.fc_z_a( F.relu( self.fc_h_a(feature) ) ).view(-1, self.act_dim, self.atom_size)
+
+        q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)
+        # print('q-distribution-q_atoms: ', q_atoms_a.shape)
+
+        return q_atoms
+
+    def reset_noise(self):
+        self.fc_h_v.reset_noise()
+        self.fc_h_a.reset_noise()
+        self.fc_z_v.reset_noise()
+        self.fc_z_a.reset_noise()
+
+    def _evaluation_mode(self, mode=False):
+        self.fc_h_v.evaluation_mode = mode
+        self.fc_h_a.evaluation_mode = mode
+        self.fc_z_v.evaluation_mode = mode
+        self.fc_z_a.evaluation_mode = mode
