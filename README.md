@@ -40,7 +40,7 @@ pip install torch
 ```
 
 ### Running Experiments
-You can find full default configurations in [pixel/configs](https://github.com/RamiSketcher/AgentPixel/tree/main/pixel/configs), but you can use a few external arguments.
+You can find full default configurations in [pixel/configs](https://github.com/RamiSketcher/AgentPixel/tree/main/pixel/configs), but you can use a few external arguments. (--n-envs 0 is for single-non-vectorized setting of environment)
 ```
 conda activate pixel
 python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 0 --device 'cuda' --wb --seed 1 2 3
