@@ -28,7 +28,7 @@ srun -c 32 --gres=gpu:1 --mem=16GB --qos=nopreemption -p interactive --pty bash
 
 
 tmux new -s atari-derainbow-s1
-tmux a -t atari-derainbow-s
+tmux a -t atari-derainbow-s1
 
 
 conda activate pixel

@@ -44,7 +44,7 @@ class RainbowAgent:
         net_cfgs = self.configs['critic']['network']
         hyperparameters  = self.configs['algorithm']['hyperparameters']
         seed, device = self.seed, self._device_
-        return NDCQNetwork2(obs_dim, act_dim, net_cfgs, hyperparameters, seed, device)
+        return NDCQNetwork(obs_dim, act_dim, net_cfgs, hyperparameters, seed, device)
 
     # def get_q(self, observation, action):
     #     return self.online_net(observation).gather(1, action)
@@ -79,58 +79,6 @@ class RainbowAgent:
 
 
 
-class RainbowAgent3:
-    def __init__(self,
-                 obs_dim, act_dim,
-                 configs, seed, device):
-        self.obs_dim, self.act_dim= obs_dim, act_dim
-        self.configs, self.seed = configs, seed
-        self._device_ = device
-        self.online_net, self.target_net = None, None
-        self._build()
-
-    def _build(self):
-        self.online_net, self.target_net = self._set_q(), self._set_q()
-        self.target_net.load_state_dict(self.online_net.state_dict())
-        self.target_net.eval()
-
-    def _set_q(self):
-        obs_dim, act_dim = self.obs_dim, self.act_dim
-        net_cfgs = self.configs['critic']['network']
-        hyperparameters  = self.configs['algorithm']['hyperparameters']
-        seed, device = self.seed, self._device_
-        return NDCQNetwork3(obs_dim, act_dim, net_cfgs, hyperparameters, seed, device)
-
-    # def get_q(self, observation, action):
-    #     return self.online_net(observation).gather(1, action)
-
-    # def get_double_q_target(self, observation):
-    #     with T.no_grad():
-    #         return self.target_net(observation).gather(1, self.online_net(observation).argmax(dim=1, keepdim=True))
-
-    def get_greedy_action(self, observation, evaluation=False): # Select Action(s) based on greedy-policy
-        with T.no_grad():
-            observation = T.tensor(np.array(observation), dtype=T.float32, device=self._device_)
-            if evaluation or self.configs['environment']['n-envs']==0:
-                return (self.online_net(observation.unsqueeze(0)) * self.online_net.support).sum(2).argmax(1).item()
-            else:
-                return (self.online_net(observation.unsqueeze(0)) * self.online_net.support).sum(2).argmax(1).item()
-
-    def get_e_greedy_action(self, observation, epsilon=0.001, evaluation=True): # Select Action(s) based on greedy-policy
-        with T.no_grad():
-            if np.random.random() >= epsilon:
-                return self.get_greedy_action(observation, evaluation=True)
-            else:
-                return np.random.randint(0, self.act_dim)
-
-    def get_action(self, observation, epsilon=None, evaluation=False): # interaction
-        return self.get_greedy_action(observation, evaluation)
-
-    def _evaluation_mode(self, mode=False):
-        self.online_net._evaluation_mode(mode)
-
-
-
 
 
 class RainbowLearner(MFRL):
@@ -155,7 +103,6 @@ class RainbowLearner(MFRL):
 
     def _set_agent(self):
         self.agent = RainbowAgent(self.obs_dim, self.act_dim, self.configs, self.seed, self._device_)
-        # self.agent = RainbowAgent3(self.obs_dim, self.act_dim, self.configs, self.seed, self._device_)
 
     def learn(self):
         n_envs = self.configs['environment']['n-envs']
@@ -388,71 +335,6 @@ class RainbowLearner(MFRL):
         Jq = -T.sum(m * log_q_probs, 1)
 
         return Jq
-
-
-
-    def compute_Jq_rainbow3(
-        self,
-        batch: int):
-
-        batch_size = self.configs['data']['batch-size']
-
-        n_steps = self.configs['algorithm']['hyperparameters']['n-steps']
-        atom_size = self.configs['algorithm']['hyperparameters']['atom-size']
-        Vmin = self.configs['algorithm']['hyperparameters']['v-min']
-        Vmax = self.configs['algorithm']['hyperparameters']['v-max']
-        gamma = self.configs['algorithm']['hyperparameters']['gamma']
-
-        observations = batch['observations']
-        actions = batch['actions']
-        returns = batch['returns']
-        observations_next = batch['observations_next']
-        terminals = batch['terminals']
-
-        # print('observations: ', observations.shape)
-        # print('actions: ', actions.shape)
-        # print('returns: ', returns.shape)
-        # print('terminals: ', terminals.shape)
-        # print('support: ', self.agent.online_net.support.shape)
-
-        log_ps = self.agent.online_net(observations, log=True)
-        log_ps_a = log_ps[range(batch_size), actions]
-
-        delatZ = float(Vmax-Vmin) / (atom_size-1)
-
-        with T.no_grad():
-            # Nth obs_next probs
-            pns = self.agent.online_net(observations)
-            dns = self.agent.online_net.support.expand_as(pns) * pns
-            argmax_idxs_ns = dns.sum(2).argmax(1)
-            self.agent.target_net.reset_noise()
-            pns = self.agent.target_net(observations_next)
-            pns_a = pns[range(batch_size), argmax_idxs_ns]
-
-            # Tz (Belleman op)
-            Tz = returns.unsqueeze(1) + (gamma**n_steps) * (1-terminals) * self.agent.online_net.support.unsqueeze(0)
-            Tz = Tz.clamp(min=Vmin, max=Vmax)
-            b = (Tz - Vmin) / delatZ
-
-            # Compute L2 projection onto fixed support z
-            lb = b.floor().to(T.int64)
-            ub = b.ceil().to(T.int64)
-
-            # Ditribute prob of Tz
-            m = observations.new_zeros(batch_size, atom_size)
-            offset = (T.linspace(
-                0, (batch_size-1)*atom_size, batch_size
-            ).unsqueeze(1).expand(batch_size, atom_size).to(actions))
-            m.view(-1).index_add_(
-                0, (lb+offset).view(-1), (pns_a*(ub.float()-b)).view(-1))
-            m.view(-1).index_add_(
-                0, (ub+offset).view(-1), (pns_a*(b-lb.float())).view(-1))
-
-        Jq = -T.sum(m * log_ps_a, 1)
-
-        return Jq
-
-
 
     def update_target_net(self) -> None:
         self.agent.target_net.load_state_dict(self.agent.online_net.state_dict())
