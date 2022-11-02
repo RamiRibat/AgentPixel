@@ -16,6 +16,7 @@ Algorithms we are re-implementing/plannning to re-implement:
 | Noisy DQN |  |  |  |  |
 | Rainbow | ✅ | ✅ |  |  |
 | R2D2 |  |  |  | ☑️ |
+| DERainbow |  | ✅ |  |  |
 | NGU |  |  |  | ☑️ |
 | Agnet57 |  |  |  | ☑️ |
 
@@ -64,5 +65,6 @@ This repo is adapted from [AMMI-RL](https://github.com/RamiSketcher/AMMI-RL), an
 [7] [Noisy Networks for Exploration. Fortunato et al. @ ICLR 2018](https://arxiv.org/abs/1706.10295)  
 [8] [Rainbow: Combining Improvements in Deep RL. Hessel et al. @ AAAI 2018](https://arxiv.org/abs/1710.02298)  
 [9] [Recurrent Experience Replay in Distributed RL. Kapturowski et al. @ ICLR 2019](https://www.deepmind.com/publications/recurrent-experience-replay-in-distributed-reinforcement-learning)  
-[10] [Never Give Up: Learning Directed Exploration Strategies. Badia et al. @ ICLR 2020](https://arxiv.org/abs/2002.06038)  
-[11] [Agent57: Outperforming the human Atari benchmark. Badia et al. @ PMLR 2020](https://arxiv.org/abs/2003.13350)  
+[10] [When to use parametric models in reinforcement learning? van Hasselt et al. @ NeurIPS 2019](https://arxiv.org/abs/1906.05243)  
+[11] [Never Give Up: Learning Directed Exploration Strategies. Badia et al. @ ICLR 2020](https://arxiv.org/abs/2002.06038)  
+[12] [Agent57: Outperforming the human Atari benchmark. Badia et al. @ PMLR 2020](https://arxiv.org/abs/2003.13350)  
