@@ -55,14 +55,14 @@ This repo is adapted from [AMMI-RL](https://github.com/RamiSketcher/AMMI-RL), an
 
 ## References 
 
-[1] [Human-Level Control Through Deep Reinforcement Learning. Mnih et al. @ Nature 2015](https://www.nature.com/articles/nature14236)  
-[2] [Deep Reinforcement Learning with Double Q-learning. van Hasselt et al. @ AAAI 2016](https://arxiv.org/abs/1509.06461)  
+[1] [Human-Level Control Through Deep RL. Mnih et al. @ Nature 2015](https://www.nature.com/articles/nature14236)  
+[2] [Deep RL with Double Q-learning. van Hasselt et al. @ AAAI 2016](https://arxiv.org/abs/1509.06461)  
 [3] [Prioritized Experience Replay. Schaul et al. @ ICLR 2016](https://arxiv.org/abs/1511.05952?context=cs)  
-[4] [Dueling Network Architectures for Deep Reinforcement Learning. Wang et al. @ ICLR 2016](https://arxiv.org/abs/1511.06581)  
-[5] [Asynchronous Methods for Deep Reinforcement Learning. Mnih et al. @ ICML 2016](https://arxiv.org/abs/1602.01783)  
-[6] [A Distributional Perspective on Reinforcement Learning. Bellemare et al. @ ICML 2017](https://arxiv.org/abs/1707.06887)  
+[4] [Dueling Network Architectures for Deep RLg. Wang et al. @ ICLR 2016](https://arxiv.org/abs/1511.06581)  
+[5] [Asynchronous Methods for Deep RL. Mnih et al. @ ICML 2016](https://arxiv.org/abs/1602.01783)  
+[6] [A Distributional Perspective on RL. Bellemare et al. @ ICML 2017](https://arxiv.org/abs/1707.06887)  
 [7] [Noisy Networks for Exploration. Fortunato et al. @ ICLR 2018](https://arxiv.org/abs/1706.10295)  
-[8] [Rainbow: Combining Improvements in Deep Reinforcement Learning. Hessel et al. @ AAAI 2018](https://arxiv.org/abs/1710.02298)  
-[9] [Recurrent Experience Replay in Distributed Reinforcement Learning. Kapturowski et al. @ ICLR 2019](https://www.deepmind.com/publications/recurrent-experience-replay-in-distributed-reinforcement-learning)  
+[8] [Rainbow: Combining Improvements in Deep RL. Hessel et al. @ AAAI 2018](https://arxiv.org/abs/1710.02298)  
+[9] [Recurrent Experience Replay in Distributed RL. Kapturowski et al. @ ICLR 2019](https://www.deepmind.com/publications/recurrent-experience-replay-in-distributed-reinforcement-learning)  
 [10] [Never Give Up: Learning Directed Exploration Strategies. Badia et al. @ ICLR 2020](https://arxiv.org/abs/2002.06038)  
 [11] [Agent57: Outperforming the human Atari benchmark. Badia et al. @ PMLR 2020](https://arxiv.org/abs/2003.13350)  
