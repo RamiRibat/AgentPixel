@@ -20,6 +20,25 @@ Algorithms we are re-implementing/plannning to re-implement:
 | NGU |  |  |  | ☑️ |
 | Agnet57 |  |  |  | ☑️ |
 
+## Selected Results
+### Atari 100k
+| Game | DQN | DDQN | PER | Rainbow | DERainbow |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| Alien |  |  |  |  |  |
+| Freeway |  |  |  |  |  |
+| Hero |  |  |  |  |  |
+| Pong |  |  |  |  |  |
+| Qbert |  |  |  |  |  |
+
+### Atari 200M
+| Game | DQN | DDQN | PER | Rainbow | DERainbow |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| Alien |  |  |  |  |  |
+| Freeway |  |  |  |  |  |
+| Hero |  |  |  |  |  |
+| Pong |  |  |  |  |  |
+| Qbert |  |  |  |  |  |
+
 ## How to use this code
 ### Installation (Linux Ubuntu/Debian)
 ```
@@ -40,11 +59,17 @@ pip install torch
 ```
 
 ### Running Experiments
-You can find full default configurations in [pixel/configs](https://github.com/RamiSketcher/AgentPixel/tree/main/pixel/configs), but you can use a few external arguments. (--n-envs 0 is for single-non-vectorized setting of environment)
+You can find full default configurations in [pixel/configs](https://github.com/RamiSketcher/AgentPixel/tree/main/pixel/configs), but you can use a few external arguments.
 ```
 conda activate pixel
 python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 0 --device 'cuda' --wb --seed 1 2 3
 ```
+* ```--alg``` is the algorithm's name [DQN, DDQN, PER, Rainbow, DERainbow]
+* ```--env``` is for environment's id [e.g. Pong-v4, ALE/Pong-v5]
+* ```--n-envs``` is for number of envs (0: single-non-vectorized setting, 1+: vectorized setting)
+* ```--device``` is for device used for networks training
+* ```--wb``` is for activating W&B (default: False)
+* ```--seed``` is for random seeds, one or more
 
 
 ## Acknowledgement
