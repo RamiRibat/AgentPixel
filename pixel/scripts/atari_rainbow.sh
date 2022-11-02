@@ -32,6 +32,9 @@ tmux a -t atari-derainbow-s1
 
 
 conda activate pixel
+python -m pixel.run --alg DERainbow --env ALE/Alien-v5 --device 'cuda' --wb --seed
+
+conda activate pixel
 python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --device 'cuda' --wb --seed
 
 conda activate pixel

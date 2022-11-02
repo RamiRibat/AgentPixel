@@ -19,7 +19,7 @@ nn, F = T.nn, T.nn.functional
 from torch.nn.utils import clip_grad_norm_
 
 from pixel.agents._mfrl import MFRL
-from pixel.networks.value_functions import NDCQNetwork, NDCQNetwork3
+from pixel.networks.value_functions import NDCQNetwork
 # from pixel.networks.dnns2 import DQN
 # from pixel.utils.tools import kill_process
 
