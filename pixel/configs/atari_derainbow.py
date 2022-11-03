@@ -26,7 +26,7 @@ configurations = {
         # 'frameskip': 1,
         # 'repeat-action-probability': 0,
         'frameskip': 4,
-        'repeat-action-probability': 0.25,
+        'repeat-action-probability': 0,
         'max-steps': int(27e3), # per episode
         'max-frames': int(108e3), # per episode
 
