@@ -59,7 +59,12 @@ class MFRL:
         else:
             action = self.learn_env.action_space.sample()
 
+        # print('interact.observation: ', observation.shape)
+        # print('interact.observation: ', observation.max())
+
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
+
+        # print('interact.observation_next: ', observation_next.shape)
 
         Z += reward
         L += 1
@@ -87,12 +92,13 @@ class MFRL:
         else:
             action = self.learn_env.action_space.sample()
 
-        # print('interact.observation: ', observation.sum(1).sum(1))
+        # print('interact.observation: ', observation.shape)
+        # print('interact.observation: ', observation.max())
         # print('action: ', action)
 
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
 
-        # print('interact.observation_next: ', observation_next.sum(1).sum(1))
+        # print('interact.observation_next: ', observation_next.shape)
         # print('reward: ', reward.shape)
         # print('terminated: ', terminated.shape)
 

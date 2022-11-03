@@ -21,6 +21,7 @@ from gym.vector.async_vector_env import AsyncVectorEnv
 from gym.vector.sync_vector_env import SyncVectorEnv
 
 from pixel.envs.wrappers import AtariPreprocessing, FrameStack
+from pixel.envs.wrappers import GrayScaleObservation, ResizeObservation, NormalizeObservation
 
 from pixel.envs.atari_env import AtariEnv
 
@@ -59,9 +60,16 @@ class GymMaker:
                         )
 
                 if (configs['domain'] == 'atari') and (configs['state'] == 'pixel'):
-                    env = AtariPreprocessing(
+                    # env = AtariPreprocessing(
+                    #         env=env,
+                    #         **configs['pre-processing'])
+                    env = ResizeObservation(
                             env=env,
-                            **configs['pre-processing'])
+                            shape=(84,84))
+                    env = GrayScaleObservation(
+                            env=env)
+                    # env = NormalizeObservation(
+                    #         env=env)
                     env = FrameStack(
                             env=env,
                             num_stack=configs['n-stacks'])

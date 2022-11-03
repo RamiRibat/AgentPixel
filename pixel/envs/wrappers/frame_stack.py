@@ -175,7 +175,8 @@ class FrameStack(gym.ObservationWrapper):
         Returns:
             Stacked observations, reward, terminated, truncated, and information from the environment
         """
-        observation, reward, terminated, truncated, info = self.env.step(action, single_frame = False)
+        # observation, reward, terminated, truncated, info = self.env.step(action, single_frame = False)
+        observation, reward, terminated, truncated, info = self.env.step(action)
         self.frames.append(observation)
         return self.observation(None), reward, terminated, truncated, info
 
@@ -188,13 +189,15 @@ class FrameStack(gym.ObservationWrapper):
         Returns:
             The stacked observations
         """
-        if life_terminated:
-            obs, info = self.env.reset_(life_terminated, **kwargs)
-            self.frames.append(obs)
-        else:
-            obs, info = self.env.reset_(**kwargs)
-            [self.frames.append(obs) for _ in range(self.num_stack)]
+        # if life_terminated:
+        #     obs, info = self.env.reset_(life_terminated, **kwargs)
+        #     self.frames.append(obs)
+        # else:
+        #     obs, info = self.env.reset_(**kwargs)
+        #     [self.frames.append(obs) for _ in range(self.num_stack)]
 
+        obs, info = self.env.reset(**kwargs)
+        [self.frames.append(obs) for _ in range(self.num_stack)]
         # [self.frames.append(np.zeros(obs.shape)) for _ in range(self.num_stack-1)]
         # self.frames.append(obs)
 

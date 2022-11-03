@@ -21,12 +21,15 @@ configurations = {
         'action': 'discrete',
         'n-envs': [0],
         'asynchronous': True,
-        'frameskip': 1,
-        'n-stacks': 4,
         'reward-clip': 1,
-        'repeat-action-probability': 0,
+        'n-stacks': 4,
+        # 'frameskip': 1,
+        # 'repeat-action-probability': 0,
+        'frameskip': 4,
+        'repeat-action-probability': 0.25,
         'max-steps': int(27e3), # per episode
         'max-frames': int(108e3), # per episode
+
         'pre-processing': {
             'noop_max': 30,
             'frame_skip': 4,

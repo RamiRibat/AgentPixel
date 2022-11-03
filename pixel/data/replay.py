@@ -150,7 +150,8 @@ class ReplayBuffer:
     def append_sard(self, s, a, r, d) -> None:
         pixel = self.configs['obs-type'] == 'pixel'
         s = s[-1] if self.history > 1 else s
-        if pixel: s = (s*255).astype(np.uint8)
+        # if pixel: s = (s*255).astype(np.uint8)
+        if pixel: s = s.astype(np.uint8)
         sard = (self.t, s, a, r, d)
         if self.configs['buffer-type'] == 'PER':
             self.transitions.append(sard, self.transitions.max)
@@ -274,8 +275,8 @@ class ReplayBuffer:
                 valid = True
         sard_dtype, transitions = self.SARD['dtype'], self._get_transitions(idxs)
         if self.configs['obs-type'] == 'pixel':
-            observations = T.tensor(transitions['observation'][:, :self.history], dtype=T.float32, device=self._device_).div_(255)
-            observations_next = T.tensor(transitions['observation'][:, self.n_steps:self.n_steps+self.history], dtype=T.float32, device=self._device_).div_(255)
+            observations = T.tensor(transitions['observation'][:, :self.history], dtype=T.float32, device=self._device_)#.div_(255)
+            observations_next = T.tensor(transitions['observation'][:, self.n_steps:self.n_steps+self.history], dtype=T.float32, device=self._device_)#.div_(255)
         # elif self.configs['obs-type'] == 'numerical':
         #     observations = T.tensor(np.copy(transitions['observation'][:, :self.history]), dtype=T.float32, device=self._device_)
         #     observations_next = T.tensor(np.copy(transitions['observation'][:, self.n_steps:self.n_steps+self.history]), dtype=T.float32, device=self._device_)
