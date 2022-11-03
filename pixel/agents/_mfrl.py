@@ -136,6 +136,7 @@ class MFRL:
                 Z, S, L = 0, 0, 0
                 observation, info = self.eval_env.reset()
                 while True:
+                    # print(f'[ Evaluation ] ee={ee} | L={L}')
                     # action = self.learn_env.action_space.sample()
                     # action = self.agent.get_greedy_action(observation, evaluation=True)
                     action = self.agent.get_e_greedy_action(observation, evaluation=True)

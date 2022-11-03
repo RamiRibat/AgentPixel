@@ -144,8 +144,7 @@ class AtariPreprocessing(gym.Wrapper):
             #     self.game_over = terminated
             #     self.lives = new_lives
 
-            # if self.terminal_on_life_loss:
-            if self.terminal_on_life_loss and not single_frame:
+            if self.terminal_on_life_loss:
                 new_lives = self.ale.lives()
                 if not terminated: # if not-term check if it's life terminated
                     self.life_terminated = new_lives < self.lives and new_lives > 0
@@ -193,6 +192,44 @@ class AtariPreprocessing(gym.Wrapper):
         #     self.lives = new_lives
 
         return self._get_obs(), total_reward, terminated, truncated, info
+
+
+    def reset_(self, life_terminated=False, **kwargs):
+        """Resets the environment using preprocessing."""
+        # NoopReset
+        if life_terminated:
+            reset_info = {}
+            _, _, terminated, truncated, step_info = self.env.step(0)
+            reset_info.update(step_info)
+            if terminated or truncated:
+                _, reset_info = self.env.reset(**kwargs)
+                self.lives = self.ale.lives()
+            pass
+        else:
+            _, reset_info = self.env.reset(**kwargs)
+            noops = (
+                self.env.unwrapped.np_random.integers(1, self.noop_max + 1)
+                if self.noop_max > 0
+                else 0
+            )
+            for _ in range(noops):
+                _, _, terminated, truncated, step_info = self.env.step(0)
+                reset_info.update(step_info)
+                if terminated or truncated:
+                    _, reset_info = self.env.reset(**kwargs)
+            self.lives = self.ale.lives()
+
+        self.life_terminated = False
+        self.game_over = False
+
+        if self.grayscale_obs:
+            self.ale.getScreenGrayscale(self.obs_buffer[0])
+        else:
+            self.ale.getScreenRGB(self.obs_buffer[0])
+        self.obs_buffer[1].fill(0)
+
+        return self._get_obs(), reset_info
+
 
     def reset(self, **kwargs):
         """Resets the environment using preprocessing."""

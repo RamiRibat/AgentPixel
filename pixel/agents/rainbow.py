@@ -135,7 +135,7 @@ class RainbowLearner(MFRL):
             T, I = 0, 0
             while T<LT:
                 # print('observation: ', observation.shape)
-                if (I%Lf==0): self.agent.online_net.reset_noise()
+                # if (I%Lf==0): self.agent.online_net.reset_noise()
 
                 observation, Z, L, Traj_new, terminated, truncated = self.interact(observation, Z, L, T, Traj)
                 # observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj)
@@ -239,8 +239,8 @@ class RainbowLearner(MFRL):
 
         if ((I)%TUf == 0): self.update_target_net()
 
-        # self.agent.online_net.reset_noise()
-        # self.agent.target_net.reset_noise()
+        self.agent.online_net.reset_noise()
+        self.agent.target_net.reset_noise()
 
         # print('<--[ Training ]')
 
@@ -300,7 +300,7 @@ class RainbowLearner(MFRL):
         with T.no_grad():
             # Nth obs_next probs
             q_values, q_actions = self.agent.online_net(observations)
-            self.agent.target_net.reset_noise()
+            # self.agent.target_net.reset_noise()
             q_probs_next = self.agent.target_net.q_probs(observations_next, q_actions)
 
             # Tz (Belleman op)
@@ -308,13 +308,14 @@ class RainbowLearner(MFRL):
                 + (gamma**n_steps)\
                 * (1-terminals.unsqueeze(1))\
                 * self.agent.online_net.support.unsqueeze(0)
-            # tZ = returns + gamma_n*(1-terminals)*self.agent.online_net.support
             Tz = Tz.clamp(min=Vmin, max=Vmax)
             b = (Tz - Vmin) / delatZ
 
             # Compute L2 projection onto fixed support z
             lb = b.floor().to(T.int64)
             ub = b.ceil().to(T.int64)
+            # lb = b.floor().long()
+            # ub = b.ceil().long()
 
             # Ditribute prob of Tz
             offset = (T.linspace(
@@ -335,12 +336,6 @@ class RainbowLearner(MFRL):
 
     def update_target_net(self) -> None:
         self.agent.target_net.load_state_dict(self.agent.online_net.state_dict())
-
-    def update_buffer_beta0(self, T):
-        LT = self.configs['learning']['total-steps']
-        beta = self.buffer.beta
-        fraction = min(T/LT, 1.0)
-        self.buffer.beta = beta + fraction * (1.0 - beta)
 
     def update_buffer_beta(self, steps):
         LT = self.configs['learning']['total-steps']
@@ -369,7 +364,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-10" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-11" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:
@@ -421,7 +416,7 @@ if __name__ == "__main__":
         if device == 'cuda':
             # T.cuda.manual_seed(seed) # bad choice
             T.cuda.manual_seed(np.random.randint(1, 10000))
-            # T.backends.cudnn.enabled = True
+            T.backends.cudnn.enabled = True
 
     configurations = configs.configurations
     configurations['environment']['name'] = args.env

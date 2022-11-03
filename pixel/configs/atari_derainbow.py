@@ -31,7 +31,8 @@ configurations = {
             'noop_max': 30,
             'frame_skip': 4,
             'screen_size': 84,
-            'terminal_on_life_loss': True, # training only
+            # 'terminal_on_life_loss': True, # training only
+            'terminal_on_life_loss': False, # training only
             'grayscale_obs': True,
             'grayscale_newaxis': False,
             'scale_obs': True, # default=False
@@ -53,7 +54,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(1e4), # iteration X n-envs
-        'episodes': 5,
+        'episodes': 10,
         'render': False,
     },
 
