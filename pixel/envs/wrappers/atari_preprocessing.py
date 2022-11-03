@@ -144,6 +144,15 @@ class AtariPreprocessing(gym.Wrapper):
             #     self.game_over = terminated
             #     self.lives = new_lives
 
+            # if self.terminal_on_life_loss:
+            if self.terminal_on_life_loss and not single_frame:
+                new_lives = self.ale.lives()
+                if not terminated:
+                    self.life_terminated = new_lives < self.lives and new_lives > 0
+                    terminated = True
+                self.game_over = terminated
+                self.lives = new_lives
+
             if terminated or truncated:
                 break
 
@@ -166,13 +175,13 @@ class AtariPreprocessing(gym.Wrapper):
         #     self.game_over = terminated
         #     self.lives = new_lives
 
-        # if self.terminal_on_life_loss:
-        if self.terminal_on_life_loss and not single_frame:
-            new_lives = self.ale.lives()
-            if not terminated:
-                self.life_terminated = new_lives < self.lives and new_lives > 0
-            self.game_over = terminated
-            self.lives = new_lives
+        # # if self.terminal_on_life_loss:
+        # if self.terminal_on_life_loss and not single_frame:
+        #     new_lives = self.ale.lives()
+        #     if not terminated:
+        #         self.life_terminated = new_lives < self.lives and new_lives > 0
+        #     self.game_over = terminated
+        #     self.lives = new_lives
 
         # if self.terminal_on_life_loss and not single_frame:
         #     # print(f'check if life-terminated; given terminated={terminated}:')
