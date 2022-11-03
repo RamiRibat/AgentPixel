@@ -71,8 +71,8 @@ class NDCQNetwork(nn.Module):
                 return probs[range(action.shape[0]), action]
 
     def distribution(self, observation: T.Tensor) -> T.Tensor:
-        observation = observation / 255.
-        
+        # observation = observation / 255.
+
         feature = self.feature_layer(observation)
         value = self.v_net(feature).view(-1, 1, self.atom_size)
         advantage = self.adv_net(feature).view(-1, self.act_dim, self.atom_size)
