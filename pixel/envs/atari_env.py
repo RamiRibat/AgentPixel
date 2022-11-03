@@ -27,8 +27,6 @@ class AtariEnv(gym.Wrapper):
 
         super().__init__(env)
 
-        # print('Initialize AtariEnv')
-
         self.configs = configs
         self.eval = eval
         self.seed = seed
@@ -58,13 +56,9 @@ class AtariEnv(gym.Wrapper):
         else: # eval or train(lives=0)
             # print(f'non-life-termination')
             observation, info = self.env.reset() # Take 30 NO-OP actions
-            
+
         observation = np.asarray(observation, dtype=np.float32)
 
-        # observation, info = self.env.reset() # Take 30 NO-OP actions
-        # observation = np.asarray(observation, dtype=np.float32)
-        # print(f'reset.observation: {observation.sum(1).sum(1)}')
-        # self.env.env.lives = self.env.env.ale.lives()
         return observation, info
 
     def step(self, action, single_frame = False):

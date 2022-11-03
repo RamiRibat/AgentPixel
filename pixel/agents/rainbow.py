@@ -369,7 +369,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-6" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-7" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:
