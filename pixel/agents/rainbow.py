@@ -137,20 +137,18 @@ class RainbowLearner(MFRL):
                 # print('observation: ', observation.shape)
                 if (I%Lf==0): self.agent.online_net.reset_noise()
 
-                # observation, Z, L, Traj_new, terminated, truncated = self.interact(observation, Z, L, T, Traj)
-                observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj)
+                observation, Z, L, Traj_new, terminated, truncated = self.interact(observation, Z, L, T, Traj)
+                # observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj)
 
                 if (Traj_new - Traj) > 0:
                     ZList.append(lastZ), LList.append(lastL)
-                    # print(f'Traj={Traj_new}| LL={lastL} | LZ={lastZ}')
-                    # print(f'Traj={Traj_new}| LL={lastL} | LZ={lastZ} | terminated={terminated} | truncated={truncated}')
                 else:
                     lastZ, lastL = Z, L
                 Traj = Traj_new
 
-                # T += 1 # single
-                # steps = 1
-                T += steps # vec
+                T += 1 # single
+                steps = 1
+                # T += steps # vec
 
                 RainbowLT.n = T
                 RainbowLT.set_postfix({'Traj': Traj, 'LL': lastL, 'LZ': lastZ})
@@ -206,8 +204,8 @@ class RainbowLearner(MFRL):
         self.agent._evaluation_mode(True)
         self.agent.online_net.eval()
         VZ, VS, VL = self.evaluate()
-        self.agent._evaluation_mode(False)
-        self.agent.online_net.train()
+        # self.agent._evaluation_mode(False)
+        # self.agent.online_net.train()
         logs['data/env_buffer_size                '] = self.buffer.size()
         logs['training/rainbow/Jq                 '] = Jq
         logs['training/rainbow/beta               '] = self.buffer.beta
@@ -372,7 +370,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-100k-{environment}-X{n_envs}" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-5" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:
@@ -421,10 +419,10 @@ if __name__ == "__main__":
         np.random.seed(seed)
         # T.manual_seed(seed) # bad choice
         T.manual_seed(np.random.randint(1, 10000))
-        if device == 'cuda':
-            # T.cuda.manual_seed(seed) # bad choice
-            T.cuda.manual_seed(np.random.randint(1, 10000))
-            # T.backends.cudnn.enabled = True
+        # if device == 'cuda':
+        #     # T.cuda.manual_seed(seed) # bad choice
+        #     T.cuda.manual_seed(np.random.randint(1, 10000))
+        #     # T.backends.cudnn.enabled = True
 
     configurations = configs.configurations
     configurations['environment']['name'] = args.env

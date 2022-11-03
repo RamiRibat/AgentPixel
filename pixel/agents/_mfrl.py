@@ -99,11 +99,11 @@ class MFRL:
         # print('1.observation: ', observation.sum())
 
         if self.configs['environment']['n-envs'] == 0:
-            observation = np.array([observation])
-            action = np.array([action])
-            reward = np.array([reward])
-            terminated = np.array([terminated])
-            truncated = np.array([truncated])
+            observation = np.array([observation], dtype=np.float32)
+            action = np.array([action], dtype=np.int32)
+            reward = np.array([reward], dtype=np.float32)
+            terminated = np.array([terminated], dtype=bool)
+            truncated = np.array([truncated], dtype=bool)
 
         # print('2.observation: ', observation.sum())
 
