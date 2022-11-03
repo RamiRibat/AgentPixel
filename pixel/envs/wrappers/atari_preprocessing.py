@@ -136,12 +136,12 @@ class AtariPreprocessing(gym.Wrapper):
             total_reward += reward
             self.game_over = terminated
 
-            # if self.terminal_on_life_loss:
-            #     new_lives = self.ale.lives()
-            #     self.life_terminated = new_lives < self.lives and new_lives > 0
-            #     terminated = terminated or self.life_terminated #new_lives < self.lives
-            #     self.game_over = terminated
-            #     self.lives = new_lives
+            if self.terminal_on_life_loss:
+                new_lives = self.ale.lives()
+                self.life_terminated = new_lives < self.lives and new_lives > 0
+                terminated = terminated or self.life_terminated #new_lives < self.lives
+                self.game_over = terminated
+                self.lives = new_lives
 
             if terminated or truncated:
                 break
@@ -157,12 +157,12 @@ class AtariPreprocessing(gym.Wrapper):
                 else:
                     self.ale.getScreenRGB(self.obs_buffer[0])
 
-        if self.terminal_on_life_loss and not single_frame:
-            new_lives = self.ale.lives()
-            self.life_terminated = new_lives < self.lives and new_lives > 0
-            terminated = terminated or self.life_terminated #new_lives < self.lives
-            self.game_over = terminated
-            self.lives = new_lives
+        # if self.terminal_on_life_loss and not single_frame:
+        #     new_lives = self.ale.lives()
+        #     self.life_terminated = new_lives < self.lives and new_lives > 0
+        #     terminated = terminated or self.life_terminated #new_lives < self.lives
+        #     self.game_over = terminated
+        #     self.lives = new_lives
 
         # if self.terminal_on_life_loss and not single_frame:
         #     # print(f'check if life-terminated; given terminated={terminated}:')
@@ -193,6 +193,8 @@ class AtariPreprocessing(gym.Wrapper):
                 _, reset_info = self.env.reset(**kwargs)
 
         self.lives = self.ale.lives()
+        self.life_terminated = False
+        self.game_over = False
 
         if self.grayscale_obs:
             self.ale.getScreenGrayscale(self.obs_buffer[0])
