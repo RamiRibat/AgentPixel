@@ -60,14 +60,14 @@ class GymMaker:
                         )
 
                 if (configs['domain'] == 'atari') and (configs['state'] == 'pixel'):
-                    # env = AtariPreprocessing(
-                    #         env=env,
-                    #         **configs['pre-processing'])
-                    env = ResizeObservation(
+                    env = AtariPreprocessing(
                             env=env,
-                            shape=(84,84))
-                    env = GrayScaleObservation(
-                            env=env)
+                            **configs['pre-processing'])
+                    # env = ResizeObservation(
+                    #         env=env,
+                    #         shape=(84,84))
+                    # env = GrayScaleObservation(
+                    #         env=env)
                     # env = NormalizeObservation(
                     #         env=env)
                     env = FrameStack(

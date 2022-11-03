@@ -32,7 +32,8 @@ configurations = {
 
         'pre-processing': {
             'noop_max': 30,
-            'frame_skip': 4,
+            # 'frame_skip': 4,
+            'frame_skip': 1,
             'screen_size': 84,
             # 'terminal_on_life_loss': True, # training only
             'terminal_on_life_loss': False, # training only
@@ -57,7 +58,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(1e4), # iteration X n-envs
-        'episodes': 10,
+        'episodes': 2,
         'render': False,
     },
 
