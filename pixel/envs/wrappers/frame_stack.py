@@ -190,9 +190,9 @@ class FrameStack(gym.ObservationWrapper):
         """
         obs, info = self.env.reset(**kwargs)
 
-        [self.frames.append(obs) for _ in range(self.num_stack)]
+        # [self.frames.append(obs) for _ in range(self.num_stack)]
 
-        # [self.frames.append(np.zeros(obs.shape)) for _ in range(self.num_stack-1)]
-        # self.frames.append(obs)
+        [self.frames.append(np.zeros(obs.shape)) for _ in range(self.num_stack-1)]
+        self.frames.append(obs)
 
         return self.observation(None), info

@@ -256,7 +256,6 @@ class RainbowLearner(MFRL):
         importance_ws = batch['importance_ws']
 
         Jq_biased = self.compute_Jq_rainbow(batch)
-        # Jq_biased = self.compute_Jq_rainbow3(batch)
         Jq = T.mean(importance_ws * Jq_biased)
 
         self.agent.online_net.optimizer.zero_grad()
@@ -370,7 +369,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-5" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-6" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:
