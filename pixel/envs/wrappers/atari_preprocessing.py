@@ -147,9 +147,9 @@ class AtariPreprocessing(gym.Wrapper):
             # if self.terminal_on_life_loss:
             if self.terminal_on_life_loss and not single_frame:
                 new_lives = self.ale.lives()
-                if not terminated:
+                if not terminated: # if not-term check if it's life terminated
                     self.life_terminated = new_lives < self.lives and new_lives > 0
-                    terminated = True
+                    terminated = self.life_terminated
                 self.game_over = terminated
                 self.lives = new_lives
 
