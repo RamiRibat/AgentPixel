@@ -137,9 +137,13 @@ class AtariPreprocessing(gym.Wrapper):
             self.game_over = terminated
 
             # if self.terminal_on_life_loss and not terminated:
+            #     print('\ncheck if terminal_on_life:')
             #     new_lives = self.ale.lives()
+            #     print(f'lives: {self.lives} | new: {new_lives}')
             #     self.life_terminated = new_lives < self.lives and new_lives > 0
+            #     print(f'life_terminated: {self.life_terminated}')
             #     terminated = terminated or self.life_terminated #new_lives < self.lives
+            #     print(f'terminated: {terminated}')
             #     self.game_over = terminated
             #     self.lives = new_lives
 
@@ -168,13 +172,12 @@ class AtariPreprocessing(gym.Wrapper):
 
             # if terminated or truncated: break
 
-        # # if self.terminal_on_life_loss:
-        # if self.terminal_on_life_loss and not single_frame:
-        #     new_lives = self.ale.lives()
-        #     self.life_terminated = new_lives < self.lives and new_lives > 0
-        #     # terminated = terminated or self.life_terminated #new_lives < self.lives
-        #     self.game_over = terminated
-        #     self.lives = new_lives
+        if self.terminal_on_life_loss and not terminated:
+            new_lives = self.ale.lives()
+            self.life_terminated = new_lives < self.lives and new_lives > 0
+            terminated = terminated or self.life_terminated #new_lives < self.lives
+            self.game_over = terminated
+            self.lives = new_lives
 
         # # if self.terminal_on_life_loss:
         # if self.terminal_on_life_loss and not single_frame:
@@ -182,15 +185,6 @@ class AtariPreprocessing(gym.Wrapper):
         #     if not terminated:
         #         self.life_terminated = new_lives < self.lives and new_lives > 0
         #     self.game_over = terminated
-        #     self.lives = new_lives
-
-        # if self.terminal_on_life_loss and not single_frame:
-        #     # print(f'check if life-terminated; given terminated={terminated}:')
-        #     new_lives = self.ale.lives()
-        #     # print(f'new_lives={new_lives} | lives={self.lives}')
-        #     if new_lives < self.lives and new_lives > 0:
-        #         self.life_terminated = not terminated
-        #         terminated = True
         #     self.lives = new_lives
 
         return self._get_obs(), total_reward, terminated, truncated, info
