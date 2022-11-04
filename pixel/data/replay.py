@@ -19,7 +19,7 @@ def sard(obs_type, obs_dim, act_dim):
             ('observation', np.uint8, (84,84)),
             ('action', np.int32),
             ('reward', np.float32),
-            ('terminal', np.bool_),
+            ('terminal', bool),
         ])
     elif obs_type == 'numerical':
         blank_sard = (0, np.zeros((obs_dim), dtype=np.float32), 0, 0.0, False)
@@ -28,7 +28,7 @@ def sard(obs_type, obs_dim, act_dim):
             ('observation', np.float32, (obs_dim)),
             ('action', np.int32),
             ('reward', np.float32),
-            ('terminal', np.bool_),
+            ('terminal', bool),
         ])
     return dict(blank=blank_sard, dtype=sard_dtype)
 
@@ -189,6 +189,7 @@ class ReplayBuffer:
             			 returns=segment_batch['returns'],
             			 observations_next=segment_batch['observations_next'],
             			 terminals=segment_batch['terminals'],
+                         # terminals2=segment_batch['terminals2'],
                          importance_ws=weights_normz)
         else:
             batch = self._sample_batch_from_buffer(buffer_size)
@@ -281,8 +282,10 @@ class ReplayBuffer:
         actions = T.tensor(np.copy(transitions['action'][:, self.history-1]), dtype=T.int64, device=self._device_)
         rewards = T.tensor(np.copy(transitions['reward'][:, self.history-1:-1]), dtype=T.float32, device=self._device_)
         returns = T.matmul(rewards, self.gamma_n)
-        # terminals = T.tensor(np.expand_dims(transitions['terminal'][:, self.history + self.n_steps - 1], axis=1), dtype=T.float32, device=self._device_)
-        terminals = T.tensor(np.copy(transitions['terminal'][:, self.history + self.n_steps - 1]), dtype=T.float32, device=self._device_)
+        terminals = T.tensor(np.expand_dims(transitions['terminal'][:, self.history + self.n_steps - 1], axis=1), dtype=T.float32, device=self._device_)
+        # print('1.terminals: ', (1-terminals))
+        # terminals2 = T.tensor(np.copy(transitions['terminal'][:, self.history + self.n_steps - 1]), dtype=T.float32, device=self._device_)
+        # print('2.terminals: ', (1-terminals2.unsqueeze(1)))
         batch = dict(
             probs=probs,
             idxs=idxs,
@@ -291,7 +294,9 @@ class ReplayBuffer:
             actions=actions,
             returns=returns,
             observations_next=observations_next,
-            terminals=terminals)
+            terminals=terminals,
+            # terminals2=terminals2
+            )
         return batch
 
 
@@ -300,7 +305,7 @@ class ReplayBuffer:
         transitions_idxs = np.arange(-self.history+1, self.n_steps+1) + np.expand_dims(idxs, axis=1)
         transitions = self.transitions.get(transitions_idxs)
         transitions_t0 = transitions['t'] == 0
-        blank_mask = np.zeros_like(transitions_t0, dtype=np.bool_)
+        blank_mask = np.zeros_like(transitions_t0, dtype=bool)
         for t in range(self.history-2, -1, -1): # (t-1, t-2, t-3)-1
             blank_mask[:, t] = np.logical_or(blank_mask[:, t+1], transitions_t0[:, t+1])
         for t in range(self.history, self.history+self.n_steps): # (t+1, t+2, t+3)

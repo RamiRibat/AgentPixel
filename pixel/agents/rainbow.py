@@ -288,6 +288,7 @@ class RainbowLearner(MFRL):
         returns = batch['returns'] # [N]
         observations_next = batch['observations_next'] # [N, Stacks, H, W]
         terminals = batch['terminals'] # [N]
+        # terminals2 = batch['terminals2'] # [N]
 
         # print('observations: ', observations.shape)
         # print('actions: ', actions.shape)
@@ -308,12 +309,14 @@ class RainbowLearner(MFRL):
             # Tz (Belleman op)
             Tz = returns.unsqueeze(1)\
                 + (gamma**n_steps)\
-                * (1-terminals.unsqueeze(1))\
+                * (1-terminals)\
                 * self.agent.online_net.support.unsqueeze(0)
-            # Tz = returns.unsqueeze(1)\
+            # Tz2 = returns.unsqueeze(1)\
             #     + (gamma**n_steps)\
-            #     * (1-terminals)\
+            #     * (1-terminals2.unsqueeze(1))\
             #     * self.agent.online_net.support.unsqueeze(0)
+            # print('Tz: ', Tz)
+            # print('Tz2: ', Tz2)
             Tz = Tz.clamp(min=Vmin, max=Vmax)
             b = (Tz - Vmin) / delatZ
 
@@ -371,7 +374,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-16" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-17" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:
