@@ -52,13 +52,13 @@ class GymMaker:
     def _gym_make(self, configs, eval, seed, device):
         def create_env():
             def _make():
+                if eval: configs['pre-processing']['terminal_on_life_loss'] = False
                 env = gym.make(
                         id=configs['name'],
                         frameskip=configs['frameskip'],
                         max_num_frames_per_episode=configs['max-frames'],
                         repeat_action_probability=configs['repeat-action-probability'],
                         )
-
                 if (configs['domain'] == 'atari') and (configs['state'] == 'pixel'):
                     env = AtariPreprocessing(
                             env=env,
