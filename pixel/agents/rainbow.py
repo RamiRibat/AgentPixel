@@ -37,7 +37,8 @@ class RainbowAgent:
     def _build(self):
         self.online_net, self.target_net = self._set_q(), self._set_q()
         self.target_net.load_state_dict(self.online_net.state_dict())
-        self.online_net.train(), self.target_net.eval()
+        self.online_net.train(), self.target_net.train()
+        for p in self.target_net.parameters(): p.requires_grad = False
 
     def _set_q(self):
         obs_dim, act_dim = self.obs_dim, self.act_dim
@@ -70,12 +71,12 @@ class RainbowAgent:
         else:
             return np.random.randint(0, self.act_dim)
 
-    def get_action(self, observation, epsilon=None, evaluation=False): # interaction
+    def get_action(self, observation, evaluation=False): # interaction
         return self.get_greedy_action(observation, evaluation)
 
-    def _evaluation_mode(self, mode=False):
-        self.online_net._evaluation_mode(mode)
-        self.target_net._evaluation_mode(mode)
+    # def _evaluation_mode(self, mode=False):
+    #     self.online_net._evaluation_mode(mode)
+    #     self.target_net._evaluation_mode(mode)
 
 
 
@@ -135,10 +136,10 @@ class RainbowLearner(MFRL):
             T, I = 0, 0
             while T<LT:
                 # print('observation: ', observation.shape)
-                # if (I%Lf==0): self.agent.online_net.reset_noise()
+                if (I%Lf==0): self.agent.online_net.reset_noise()
 
-                observation, Z, L, Traj_new, terminated, truncated = self.interact(observation, Z, L, T, Traj)
-                # observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj)
+                # observation, Z, L, Traj_new, terminated, truncated = self.interact(observation, Z, L, T, Traj)
+                observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj)
 
                 if (Traj_new - Traj) > 0:
                     ZList.append(lastZ), LList.append(lastL)
@@ -146,9 +147,9 @@ class RainbowLearner(MFRL):
                     lastZ, lastL = Z, L
                 Traj = Traj_new
 
-                T += 1 # single
-                steps = 1
-                # T += steps # vec
+                # T += 1 # single
+                # steps = 1
+                T += steps # vec
 
                 RainbowLT.n = T
                 RainbowLT.set_postfix({'Traj': Traj, 'LL': lastL, 'LZ': lastZ})
@@ -171,10 +172,10 @@ class RainbowLearner(MFRL):
                     total_time_real = cur_time_real - start_time_real
                     sps = T/total_time_real
                     SPSList.append(sps)
-                    self.agent._evaluation_mode(True)
+                    # self.agent._evaluation_mode(True)
                     self.agent.online_net.eval()
                     VZ, VS, VL = self.evaluate()
-                    self.agent._evaluation_mode(False)
+                    # self.agent._evaluation_mode(False)
                     self.agent.online_net.train()
                     logs['data/env_buffer_size                '] = self.buffer.size()
                     logs['training/rainbow/Jq                 '] = Jq
@@ -201,7 +202,7 @@ class RainbowLearner(MFRL):
         total_time_real = cur_time_real - start_time_real
         sps = T/total_time_real
         SPSList.append(sps)
-        self.agent._evaluation_mode(True)
+        # self.agent._evaluation_mode(True)
         self.agent.online_net.eval()
         VZ, VS, VL = self.evaluate()
         # self.agent._evaluation_mode(False)
@@ -239,8 +240,8 @@ class RainbowLearner(MFRL):
 
         if ((I)%TUf == 0): self.update_target_net()
 
-        self.agent.online_net.reset_noise()
-        self.agent.target_net.reset_noise()
+        # self.agent.online_net.reset_noise()
+        # self.agent.target_net.reset_noise()
 
         # print('<--[ Training ]')
 
@@ -251,6 +252,7 @@ class RainbowLearner(MFRL):
         batch: Dict[str, np.ndarray]) -> T.Tensor:
 
         prio_eps = self.configs['algorithm']['hyperparameters']['prio-eps']
+        norm_clip = self.configs['critic']['network']['optimizer']['norm-clip']
 
         idxs = batch['tree_idxs']
         importance_ws = batch['importance_ws']
@@ -260,7 +262,7 @@ class RainbowLearner(MFRL):
 
         self.agent.online_net.optimizer.zero_grad()
         Jq.backward()
-        clip_grad_norm_(self.agent.online_net.parameters(), 10.0)
+        clip_grad_norm_(self.agent.online_net.parameters(), norm_clip)
         self.agent.online_net.optimizer.step()
 
         Jq_biased = Jq_biased.detach().cpu().numpy()
@@ -299,35 +301,40 @@ class RainbowLearner(MFRL):
 
         with T.no_grad():
             # Nth obs_next probs
-            q_values, q_actions = self.agent.online_net(observations)
-            # self.agent.target_net.reset_noise()
-            q_probs_next = self.agent.target_net.q_probs(observations_next, q_actions)
+            _, q_actions_next = self.agent.online_net(observations_next)
+            self.agent.target_net.reset_noise()
+            q_probs_next = self.agent.target_net.q_probs(observations_next, q_actions_next)
 
             # Tz (Belleman op)
             Tz = returns.unsqueeze(1)\
                 + (gamma**n_steps)\
                 * (1-terminals.unsqueeze(1))\
                 * self.agent.online_net.support.unsqueeze(0)
+            # Tz = returns.unsqueeze(1)\
+            #     + (gamma**n_steps)\
+            #     * (1-terminals)\
+            #     * self.agent.online_net.support.unsqueeze(0)
             Tz = Tz.clamp(min=Vmin, max=Vmax)
             b = (Tz - Vmin) / delatZ
 
             # Compute L2 projection onto fixed support z
             lb = b.floor().to(T.int64)
             ub = b.ceil().to(T.int64)
-            # lb = b.floor().long()
-            # ub = b.ceil().long()
+            # Fix disappearing probability mass when l = b = u (b is int)
+            lb[ (ub>0) * (lb==ub) ] -= 1
+            ub[ (lb<(atom_size-1)) * (lb==ub) ] += 1
 
             # Ditribute prob of Tz
-            offset = (T.linspace(
+            offset = T.linspace(
                 0, (batch_size-1)*atom_size, batch_size
-            ).unsqueeze(1).expand(batch_size, atom_size).to(actions))
+            ).unsqueeze(1).expand(batch_size, atom_size).to(actions)
 
             m = observations.new_zeros(batch_size, atom_size)
 
             m.view(-1).index_add_(
-                0, (lb+offset).view(-1), (q_probs_next*(ub.float()-b)).view(-1))
+                0, (lb+offset).view(-1), (q_probs_next*(ub.float()-b)).view(-1) )
             m.view(-1).index_add_(
-                0, (ub+offset).view(-1), (q_probs_next*(b-lb.float())).view(-1))
+                0, (ub+offset).view(-1), (q_probs_next*(b-lb.float())).view(-1) )
 
 
         Jq = -T.sum(m * log_q_probs, 1)
@@ -364,7 +371,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-13" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-14" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:

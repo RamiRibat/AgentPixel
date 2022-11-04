@@ -25,7 +25,7 @@ class ResizeObservation(gym.ObservationWrapper):
         (64, 64, 3)
     """
 
-    def __init__(self, env: gym.Env, shape: Union[tuple, int]):
+    def __init__(self, env: gym.Env, shape: Union[tuple, int], grayscale = False, scale = False):
         """Resizes image observations to shape given by :attr:`shape`.
 
         Args:
@@ -42,8 +42,34 @@ class ResizeObservation(gym.ObservationWrapper):
         assert isinstance(
             env.observation_space, Box
         ), f"Expected the observation space to be Box, actual type: {type(env.observation_space)}"
-        obs_shape = self.shape + env.observation_space.shape[2:]
-        self.observation_space = Box(low=0, high=255, shape=obs_shape, dtype=np.uint8)
+        # obs_shape = self.shape + env.observation_space.shape[2:]
+        # self.observation_space = Box(low=0, high=255, shape=obs_shape, dtype=np.uint8)
+
+        self.shape = shape
+        self.grayscale_obs = grayscale
+        self.scale_obs = scale
+        # if grayscale_obs:
+        #     self.obs_buffer = [
+        #         np.empty(env.observation_space.shape[:2], dtype=np.uint8),
+        #         np.empty(env.observation_space.shape[:2], dtype=np.uint8),
+        #     ]
+        # else:
+        #     self.obs_buffer = [
+        #         np.empty(env.observation_space.shape, dtype=np.uint8),
+        #         np.empty(env.observation_space.shape, dtype=np.uint8),
+        #     ]
+
+        _low, _high, _obs_dtype = (
+            (0, 255, np.uint8) if not scale else (0, 1, np.float32)
+        )
+        _shape = (shape[0], shape[1], 1 if grayscale else 3)
+        if grayscale:
+            _shape = _shape[:-1]  # Remove channel axis
+            print("_shape: ", _shape)
+        self.observation_space = Box(
+            low=_low, high=_high, shape=_shape, dtype=_obs_dtype
+        )
+
 
     def observation(self, observation):
         """Updates the observations by resizing the observation to shape given by :attr:`shape`.
@@ -64,9 +90,23 @@ class ResizeObservation(gym.ObservationWrapper):
                 "opencv is not install, run `pip install gym[other]`"
             )
 
+        # observation = cv2.resize(
+        #     observation, self.shape[::-1], interpolation=cv2.INTER_AREA
+        # )
+
         observation = cv2.resize(
-            observation, self.shape[::-1], interpolation=cv2.INTER_AREA
+            observation,
+            (self.shape[0], self.shape[1]),
+            interpolation=cv2.INTER_AREA,
         )
+        print('observation: ', observation.shape)
+
+        if self.scale_obs:
+            observation = np.asarray(observation, dtype=np.float32) / 255.0
+        else:
+            observation = np.asarray(observation, dtype=np.uint8)
+
         if observation.ndim == 2:
             observation = np.expand_dims(observation, -1)
+
         return observation

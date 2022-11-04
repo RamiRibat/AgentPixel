@@ -54,6 +54,7 @@ class GymMaker:
             def _make():
                 env = gym.make(
                         id=configs['name'],
+                        # obs_type='grayscale',
                         frameskip=configs['frameskip'],
                         max_num_frames_per_episode=configs['max-frames'],
                         repeat_action_probability=configs['repeat-action-probability'],
@@ -63,17 +64,11 @@ class GymMaker:
                     env = AtariPreprocessing(
                             env=env,
                             **configs['pre-processing'])
-                    # env = ResizeObservation(
-                    #         env=env,
-                    #         shape=(84,84))
-                    # env = GrayScaleObservation(
-                    #         env=env)
-                    # env = NormalizeObservation(
-                    #         env=env)
                     env = FrameStack(
                             env=env,
                             num_stack=configs['n-stacks'])
                     env = AtariEnv(env=env, configs=configs, eval=eval, seed=seed, device=device)
+                    # env._seed(seed)
                 return env
             return _make
 
@@ -85,9 +80,9 @@ class GymMaker:
             env_fns = [ create_env() for e in range(configs['n-envs']) ]
             return AsyncVectorEnv(env_fns) if configs['asynchronous'] else SyncVectorEnv(env_fns)
 
-    def _seed_env(self):
-        self.env.action_space.seed(self.seed)
-        self.env.observation_space.seed(self.seed)
+    # def _seed_env(self):
+    #     self.env.action_space.seed(self.seed)
+    #     self.env.observation_space.seed(self.seed)
 
     def reset(self):
         return self.env.reset()

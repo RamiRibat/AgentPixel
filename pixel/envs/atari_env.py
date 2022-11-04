@@ -42,8 +42,10 @@ class AtariEnv(gym.Wrapper):
         """Make ale as a class property to avoid serialization error."""
         return self.env.ale
 
-    def _seed(self):
-        self.env.env.env.seed(self.seed)
+    # def _seed(self, seed):
+    #     seed = seed + np.random.randint(1, 10000)
+    #     self.ale.setInt('random_seed', seed)
+    #     self.env.env.env.seed(self.seed)
 
     def reset(self, seed=None):
         # print(f'RESET | lives={self.lives} | game-over={self.ale.game_over()}')

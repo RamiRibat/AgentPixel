@@ -152,8 +152,7 @@ class AtariPreprocessing(gym.Wrapper):
             #     self.game_over = terminated
             #     self.lives = new_lives
 
-            if terminated or truncated:
-                break
+            # if terminated or truncated: break
 
             if t == Frames - 2: # t = 2(3)
                 if self.grayscale_obs:
@@ -165,6 +164,8 @@ class AtariPreprocessing(gym.Wrapper):
                     self.ale.getScreenGrayscale(self.obs_buffer[0])
                 else:
                     self.ale.getScreenRGB(self.obs_buffer[0])
+
+            if terminated or truncated: break
 
         # # if self.terminal_on_life_loss:
         # if self.terminal_on_life_loss and not single_frame:
@@ -192,6 +193,23 @@ class AtariPreprocessing(gym.Wrapper):
         #     self.lives = new_lives
 
         return self._get_obs(), total_reward, terminated, truncated, info
+
+
+    def step_(self, action):
+        observation, reward, terminated, truncated, info = self.env.step(action)
+        self.game_over = terminated #or truncated
+        if self.grayscale_obs:
+            self.ale.getScreenGrayscale(self.obs_buffer[0])
+        else:
+            self.ale.getScreenRGB(self.obs_buffer[0])
+        # if self.terminal_on_life_loss:
+        #     new_lives = self.ale.lives()
+        #     if not terminated: # if not-term check if it's life terminated
+        #         self.life_terminated = new_lives < self.lives and new_lives > 0
+        #         terminated = self.life_terminated
+        #     self.game_over = terminated
+        #     self.lives = new_lives
+        return self._get_obs(), reward, terminated, truncated, info
 
 
     def reset_(self, life_terminated=False, **kwargs):
@@ -244,6 +262,7 @@ class AtariPreprocessing(gym.Wrapper):
 
         for _ in range(noops):
             _, _, terminated, truncated, step_info = self.env.step(0)
+            # observation, _, terminated, truncated, step_info = self.env.step(0)
             reset_info.update(step_info)
             if terminated or truncated:
                 _, reset_info = self.env.reset(**kwargs)
@@ -259,11 +278,14 @@ class AtariPreprocessing(gym.Wrapper):
         self.obs_buffer[1].fill(0)
 
         return self._get_obs(), reset_info
+        # return self._get_obs_(observation), reset_info
+
 
     def _get_obs(self):
         if self.frame_skip > 1:  # more efficient in-place pooling
             np.maximum(self.obs_buffer[0], self.obs_buffer[1], out=self.obs_buffer[0])
         assert cv2 is not None
+
         obs = cv2.resize(
             self.obs_buffer[0],
             (self.screen_size, self.screen_size),

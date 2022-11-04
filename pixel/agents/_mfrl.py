@@ -55,7 +55,8 @@ class MFRL:
         xT = self.configs['learning']['expl-steps']
 
         if t > xT:
-            action = self.agent.get_action(observation, epsilon=epsilon)
+            action = self.agent.get_action(observation)
+            # action = self.agent.get_e_greedy_action(observation, epsilon=epsilon)
         else:
             action = self.learn_env.action_space.sample()
 
@@ -88,7 +89,8 @@ class MFRL:
         xT = self.configs['learning']['expl-steps']
 
         if T > xT:
-            action = self.agent.get_action(observation, epsilon=epsilon)
+            action = self.agent.get_action(observation)
+            # action = self.agent.get_e_greedy_action(observation, epsilon=epsilon)
         else:
             action = self.learn_env.action_space.sample()
 

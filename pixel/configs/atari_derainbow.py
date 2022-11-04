@@ -23,17 +23,17 @@ configurations = {
         'asynchronous': True,
         'reward-clip': 1,
         'n-stacks': 4,
-        # 'frameskip': 1,
-        # 'repeat-action-probability': 0,
-        'frameskip': 4,
+        'frameskip': 1,
         'repeat-action-probability': 0,
+        # 'frameskip': 4,
+        # 'repeat-action-probability': 0.25,
         'max-steps': int(27e3), # per episode
         'max-frames': int(108e3), # per episode
 
         'pre-processing': {
             'noop_max': 30,
-            # 'frame_skip': 4,
-            'frame_skip': 1,
+            'frame_skip': 4,
+            # 'frame_skip': 1,
             'screen_size': 84,
             # 'terminal_on_life_loss': True, # training only
             'terminal_on_life_loss': False, # training only
@@ -46,7 +46,7 @@ configurations = {
     'learning': {
         'total-steps': int(100e3),
         'init-steps': int(1600),
-        'expl-steps': int(0),
+        'expl-steps': int(000),
         # 'total-steps': int(200e3), # 100k in van Hasselt et al. (2019)
         # 'init-steps': int(2000), # 1600 in van Hasselt et al. (2019)
         # 'expl-steps': int(1000), # 0 in van Hasselt et al. (2019)
@@ -58,7 +58,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(1e4), # iteration X n-envs
-        'episodes': 10,
+        'episodes': 2,
         'render': False,
     },
 

@@ -163,8 +163,6 @@ class ReplayBuffer:
         pixel = self.configs['obs-type'] == 'pixel'
         for i in range(len(mask)):
             if mask[i]:
-                # sard = (self.t, s[i][-1]*255 if pixel else s[i][-1], a[i], r[i], d[i]) if self.history > 1\
-                # else (self.t, s[i]*255 if pixel else s[i], a[i], r[i], d[i])
                 if pixel:
                     sard = (self.t, ( (s[i][-1] if self.history > 1 else s[i]) *255 ).astype(np.uint8), a[i], r[i], d[i])
                 else:
