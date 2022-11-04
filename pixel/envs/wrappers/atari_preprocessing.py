@@ -136,12 +136,12 @@ class AtariPreprocessing(gym.Wrapper):
             total_reward += reward
             self.game_over = terminated
 
-            if self.terminal_on_life_loss and not terminated:
-                new_lives = self.ale.lives()
-                self.life_terminated = new_lives < self.lives and new_lives > 0
-                terminated = terminated or self.life_terminated #new_lives < self.lives
-                self.game_over = terminated
-                self.lives = new_lives
+            # if self.terminal_on_life_loss and not terminated:
+            #     new_lives = self.ale.lives()
+            #     self.life_terminated = new_lives < self.lives and new_lives > 0
+            #     terminated = terminated or self.life_terminated #new_lives < self.lives
+            #     self.game_over = terminated
+            #     self.lives = new_lives
 
             # if self.terminal_on_life_loss:
             #     new_lives = self.ale.lives()
