@@ -94,7 +94,7 @@ class MFRL:
         else:
             action = self.learn_env.action_space.sample()
 
-        # print('interact.observation: ', observation.shape)
+        print('interact.observation: ', observation.shape)
         # print('interact.observation: ', observation.max())
         # print('action: ', action)
 
