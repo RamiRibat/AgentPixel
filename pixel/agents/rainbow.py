@@ -138,8 +138,8 @@ class RainbowLearner(MFRL):
                 # print('observation: ', observation.shape)
                 if (I%Lf==0): self.agent.online_net.reset_noise()
 
-                # observation, Z, L, Traj_new, terminated, truncated = self.interact(observation, Z, L, T, Traj)
-                observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj)
+                observation, Z, L, Traj_new, terminated, truncated = self.interact(observation, Z, L, T, Traj)
+                # observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj)
 
                 if (Traj_new - Traj) > 0:
                     ZList.append(lastZ), LList.append(lastL)
@@ -147,9 +147,9 @@ class RainbowLearner(MFRL):
                     lastZ, lastL = Z, L
                 Traj = Traj_new
 
-                # T += 1 # single
-                # steps = 1
-                T += steps # vec
+                T += 1 # single
+                steps = 1
+                # T += steps # vec
 
                 RainbowLT.n = T
                 RainbowLT.set_postfix({'Traj': Traj, 'LL': lastL, 'LZ': lastZ})
@@ -301,26 +301,26 @@ class RainbowLearner(MFRL):
 
         with T.no_grad():
             # Nth obs_next probs
-            _, q_actions_next = self.agent.online_net(observations_next)
+            _, q_actions_next = self.agent.online_net(observations_next) # Error: observations :)
             self.agent.target_net.reset_noise()
             q_probs_next = self.agent.target_net.q_probs(observations_next, q_actions_next)
 
             # Tz (Belleman op)
-            Tz = returns.unsqueeze(1)\
-                + (gamma**n_steps)\
-                * (1-terminals.unsqueeze(1))\
-                * self.agent.online_net.support.unsqueeze(0)
             # Tz = returns.unsqueeze(1)\
             #     + (gamma**n_steps)\
-            #     * (1-terminals)\
+            #     * (1-terminals.unsqueeze(1))\
             #     * self.agent.online_net.support.unsqueeze(0)
+            Tz = returns.unsqueeze(1)\
+                + (gamma**n_steps)\
+                * (1-terminals)\
+                * self.agent.online_net.support.unsqueeze(0)
             Tz = Tz.clamp(min=Vmin, max=Vmax)
             b = (Tz - Vmin) / delatZ
 
             # Compute L2 projection onto fixed support z
             lb = b.floor().to(T.int64)
             ub = b.ceil().to(T.int64)
-            # Fix disappearing probability mass when l = b = u (b is int)
+            # Fix disappearing probability mass when l = b = u (b is int) (Error: forgot todo)
             lb[ (ub>0) * (lb==ub) ] -= 1
             ub[ (lb<(atom_size-1)) * (lb==ub) ] += 1
 
@@ -371,7 +371,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-14" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-15" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:

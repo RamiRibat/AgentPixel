@@ -281,8 +281,8 @@ class ReplayBuffer:
         actions = T.tensor(np.copy(transitions['action'][:, self.history-1]), dtype=T.int64, device=self._device_)
         rewards = T.tensor(np.copy(transitions['reward'][:, self.history-1:-1]), dtype=T.float32, device=self._device_)
         returns = T.matmul(rewards, self.gamma_n)
-        # terminals = T.tensor(np.expand_dims(transitions['terminal'][:, self.history + self.n_steps - 1], axis=1), dtype=T.float32, device=self._device_)
-        terminals = T.tensor(np.copy(transitions['terminal'][:, self.history + self.n_steps - 1]), dtype=T.float32, device=self._device_)
+        terminals = T.tensor(np.expand_dims(transitions['terminal'][:, self.history + self.n_steps - 1], axis=1), dtype=T.float32, device=self._device_)
+        # terminals = T.tensor(np.copy(transitions['terminal'][:, self.history + self.n_steps - 1]), dtype=T.float32, device=self._device_)
         batch = dict(
             probs=probs,
             idxs=idxs,

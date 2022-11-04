@@ -152,7 +152,7 @@ class AtariPreprocessing(gym.Wrapper):
             #     self.game_over = terminated
             #     self.lives = new_lives
 
-            # if terminated or truncated: break
+            if terminated or truncated: break
 
             if t == Frames - 2: # t = 2(3)
                 if self.grayscale_obs:
@@ -165,7 +165,7 @@ class AtariPreprocessing(gym.Wrapper):
                 else:
                     self.ale.getScreenRGB(self.obs_buffer[0])
 
-            if terminated or truncated: break
+            # if terminated or truncated: break
 
         # # if self.terminal_on_life_loss:
         # if self.terminal_on_life_loss and not single_frame:

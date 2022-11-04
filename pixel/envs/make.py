@@ -54,7 +54,6 @@ class GymMaker:
             def _make():
                 env = gym.make(
                         id=configs['name'],
-                        # obs_type='grayscale',
                         frameskip=configs['frameskip'],
                         max_num_frames_per_episode=configs['max-frames'],
                         repeat_action_probability=configs['repeat-action-probability'],
@@ -68,7 +67,6 @@ class GymMaker:
                             env=env,
                             num_stack=configs['n-stacks'])
                     env = AtariEnv(env=env, configs=configs, eval=eval, seed=seed, device=device)
-                    # env._seed(seed)
                 return env
             return _make
 
