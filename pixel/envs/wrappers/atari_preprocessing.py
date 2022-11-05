@@ -211,13 +211,14 @@ class AtariPreprocessing(gym.Wrapper):
         """Resets the environment using preprocessing."""
         # NoopReset
         if life_terminated:
+            self.life_terminated = False
             reset_info = {}
             _, _, terminated, truncated, step_info = self.env.step(0)
             reset_info.update(step_info)
-            if terminated or truncated:
-                _, reset_info = self.env.reset(**kwargs)
-                self.lives = self.ale.lives()
-            pass
+            # if terminated or truncated:
+            #     _, reset_info = self.env.reset(**kwargs)
+            #     self.lives = self.ale.lives()
+            # pass
         else:
             _, reset_info = self.env.reset(**kwargs)
             noops = (
@@ -230,10 +231,11 @@ class AtariPreprocessing(gym.Wrapper):
                 reset_info.update(step_info)
                 if terminated or truncated:
                     _, reset_info = self.env.reset(**kwargs)
-            self.lives = self.ale.lives()
+            # self.lives = self.ale.lives()
 
-        self.life_terminated = False
-        self.game_over = False
+        # self.life_terminated = False
+        # self.game_over = False
+        self.lives = self.ale.lives()
 
         if self.grayscale_obs:
             self.ale.getScreenGrayscale(self.obs_buffer[0])
