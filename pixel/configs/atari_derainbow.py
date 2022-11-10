@@ -25,8 +25,6 @@ configurations = {
         'n-stacks': 4,
         'frameskip': 1,
         'repeat-action-probability': 0,
-        # 'frameskip': 4,
-        # 'repeat-action-probability': 0.25,
         'max-steps': int(27e3), # per episode
         'max-frames': int(108e3), # per episode
 
@@ -56,7 +54,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(1e4), # iteration X n-envs
-        'episodes': 2,
+        'episodes': 10,
         'render': False,
     },
 
