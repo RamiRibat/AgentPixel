@@ -82,11 +82,11 @@ class GymMaker:
     #     self.env.action_space.seed(self.seed)
     #     self.env.observation_space.seed(self.seed)
 
-    def reset(self):
-        return self.env.reset()
-
     def step(self, action):
         return self.env.step(action)
+
+    def reset(self):
+        return self.env.reset()
 
     def render(self):
         return self.env.render()

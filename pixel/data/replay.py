@@ -276,15 +276,15 @@ class ReplayBuffer:
         if self.configs['obs-type'] == 'pixel':
             observations = T.tensor(transitions['observation'][:, :self.history], dtype=T.float32, device=self._device_).div_(255)
             observations_next = T.tensor(transitions['observation'][:, self.n_steps:self.n_steps+self.history], dtype=T.float32, device=self._device_).div_(255)
-        # elif self.configs['obs-type'] == 'numerical':
-        #     observations = T.tensor(np.copy(transitions['observation'][:, :self.history]), dtype=T.float32, device=self._device_)
-        #     observations_next = T.tensor(np.copy(transitions['observation'][:, self.n_steps:self.n_steps+self.history]), dtype=T.float32, device=self._device_)
+        elif self.configs['obs-type'] == 'numerical':
+            observations = T.tensor(transitions['observation'][:, :self.history], dtype=T.float32, device=self._device_)
+            observations_next = T.tensor(transitions['observation'][:, self.n_steps:self.n_steps+self.history], dtype=T.float32, device=self._device_)
         actions = T.tensor(np.copy(transitions['action'][:, self.history-1]), dtype=T.int64, device=self._device_)
         rewards = T.tensor(np.copy(transitions['reward'][:, self.history-1:-1]), dtype=T.float32, device=self._device_)
         returns = T.matmul(rewards, self.gamma_n)
         terminals = T.tensor(np.expand_dims(transitions['terminal'][:, self.history + self.n_steps - 1], axis=1), dtype=T.float32, device=self._device_)
         # print('1.terminals: ', (1-terminals))
-        # terminals2 = T.tensor(np.copy(transitions['terminal'][:, self.history + self.n_steps - 1]), dtype=T.float32, device=self._device_)
+        # terminals = T.tensor(np.copy(transitions['terminal'][:, self.history + self.n_steps - 1]), dtype=T.float32, device=self._device_)
         # print('2.terminals: ', (1-terminals2.unsqueeze(1)))
         batch = dict(
             probs=probs,

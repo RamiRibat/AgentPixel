@@ -129,7 +129,8 @@ class AtariPreprocessing(gym.Wrapper):
         # print('AP-action: ', action)
         total_reward, terminated, truncated, info = 0.0, False, False, {}
 
-        Frames = 1 if single_frame else self.frame_skip
+        Frames = 1 if single_frame else self.frame_skip # tabs 1+2+3
+        # Frames = self.frame_skip
 
         for t in range(Frames):
             _, reward, terminated, truncated, info = self.env.step(action)
@@ -149,13 +150,19 @@ class AtariPreprocessing(gym.Wrapper):
 
             # if self.terminal_on_life_loss:
             #     new_lives = self.ale.lives()
-            #     # print(f'lives={new_lives}')
             #     if not terminated: # if not-term check if it's life terminated
             #         self.life_terminated = new_lives < self.lives and new_lives > 0
             #         terminated = self.life_terminated
             #     self.game_over = terminated
             #     self.lives = new_lives
-            #     # print(f'life_terminated: ', self.life_terminated)
+
+            # if self.terminal_on_life_loss: # tabs 1+2
+            #     new_lives = self.ale.lives()
+            #     if new_lives < self.lives and new_lives > 0:
+            #         self.life_terminated = not terminated
+            #         terminated = True
+            #     self.game_over = terminated
+            #     self.lives = new_lives
 
             if terminated or truncated: break
 
@@ -170,56 +177,49 @@ class AtariPreprocessing(gym.Wrapper):
                 else:
                     self.ale.getScreenRGB(self.obs_buffer[0])
 
-            # if terminated or truncated: break
+        # if self.terminal_on_life_loss and not terminated:
+        #     # print('\ncheck if terminal_on_life:')
+        #     new_lives = self.ale.lives()
+        #     # print(f'lives: {self.lives} | new: {new_lives}')
+        #     self.life_terminated = new_lives < self.lives and new_lives > 0
+        #     # print(f'life_terminated: {self.life_terminated}')
+        #     terminated = terminated or self.life_terminated #new_lives < self.lives
+        #     # print(f'terminated: {terminated}')
+        #     self.game_over = terminated
+        #     self.lives = new_lives
 
-        if self.terminal_on_life_loss and not terminated:
+        # if self.terminal_on_life_loss:
+        #     new_lives = self.ale.lives()
+        #     self.life_terminated = new_lives < self.lives and new_lives > 0
+        #     terminated = terminated or self.life_terminated #new_lives < self.lives
+        #     self.game_over = terminated
+        #     self.lives = new_lives
+
+        if self.terminal_on_life_loss: # tabs 1+2+3
             new_lives = self.ale.lives()
-            self.life_terminated = new_lives < self.lives and new_lives > 0
-            terminated = terminated or self.life_terminated #new_lives < self.lives
+            if new_lives < self.lives and new_lives > 0:
+                self.life_terminated = not terminated
+                terminated = True
             self.game_over = terminated
             self.lives = new_lives
 
-        # # if self.terminal_on_life_loss:
-        # if self.terminal_on_life_loss and not single_frame:
-        #     new_lives = self.ale.lives()
-        #     if not terminated:
-        #         self.life_terminated = new_lives < self.lives and new_lives > 0
-        #     self.game_over = terminated
-        #     self.lives = new_lives
-
         return self._get_obs(), total_reward, terminated, truncated, info
 
-
-    def step_(self, action):
-        observation, reward, terminated, truncated, info = self.env.step(action)
-        self.game_over = terminated #or truncated
-        if self.grayscale_obs:
-            self.ale.getScreenGrayscale(self.obs_buffer[0])
-        else:
-            self.ale.getScreenRGB(self.obs_buffer[0])
-        # if self.terminal_on_life_loss:
-        #     new_lives = self.ale.lives()
-        #     if not terminated: # if not-term check if it's life terminated
-        #         self.life_terminated = new_lives < self.lives and new_lives > 0
-        #         terminated = self.life_terminated
-        #     self.game_over = terminated
-        #     self.lives = new_lives
-        return self._get_obs(), reward, terminated, truncated, info
 
 
     def reset_(self, life_terminated=False, **kwargs):
         """Resets the environment using preprocessing."""
         # NoopReset
         if life_terminated:
-            self.life_terminated = False
+            # print(f'RESET (LT)')
             reset_info = {}
             _, _, terminated, truncated, step_info = self.env.step(0)
             reset_info.update(step_info)
-            # if terminated or truncated:
-            #     _, reset_info = self.env.reset(**kwargs)
+            if terminated or truncated:
+                _, reset_info = self.env.reset(**kwargs)
             #     self.lives = self.ale.lives()
-            # pass
         else:
+            # print(f'RESET (N)')
             _, reset_info = self.env.reset(**kwargs)
             noops = (
                 self.env.unwrapped.np_random.integers(1, self.noop_max + 1)
@@ -231,10 +231,9 @@ class AtariPreprocessing(gym.Wrapper):
                 reset_info.update(step_info)
                 if terminated or truncated:
                     _, reset_info = self.env.reset(**kwargs)
-            # self.lives = self.ale.lives()
 
-        # self.life_terminated = False
-        # self.game_over = False
+        self.life_terminated = False
+        self.game_over = False
         self.lives = self.ale.lives()
 
         if self.grayscale_obs:

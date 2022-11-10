@@ -8,7 +8,7 @@ from pixel.envs.make import GymMaker
 # from pixel.data.buffers import ReplayBuffer, PERBuffer, NSRBuffer
 
 from pixel.data.replay import ReplayBuffer
-
+from pixel.data.memory import ReplayMemory
 
 
 
@@ -43,6 +43,7 @@ class MFRL:
         configs = self.configs['data']
         hyperparameters = self.configs['algorithm']['hyperparameters']
         seed, device = self.seed, self._device_
+        # self.buffer = ReplayMemory(int(1e5))
         self.buffer = ReplayBuffer(
             n_envs=n_envs,
             obs_dim=obs_dim,

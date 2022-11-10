@@ -21,6 +21,47 @@ def _init_weights(l):
         nn.init.constant_(l.bias, 0.0)
 
 
+
+class NoisyLinearA(nn.Module):
+  def __init__(self, in_features, out_features, std_init=0.5):
+    super(NoisyLinear, self).__init__()
+    self.in_features = in_features
+    self.out_features = out_features
+    self.std_init = std_init
+    self.weight_mu = nn.Parameter(torch.empty(out_features, in_features))
+    self.weight_sigma = nn.Parameter(torch.empty(out_features, in_features))
+    self.register_buffer('weight_epsilon', torch.empty(out_features, in_features))
+    self.bias_mu = nn.Parameter(torch.empty(out_features))
+    self.bias_sigma = nn.Parameter(torch.empty(out_features))
+    self.register_buffer('bias_epsilon', torch.empty(out_features))
+    self.reset_parameters()
+    self.reset_noise()
+
+  def reset_parameters(self):
+    mu_range = 1 / math.sqrt(self.in_features)
+    self.weight_mu.data.uniform_(-mu_range, mu_range)
+    self.weight_sigma.data.fill_(self.std_init / math.sqrt(self.in_features))
+    self.bias_mu.data.uniform_(-mu_range, mu_range)
+    self.bias_sigma.data.fill_(self.std_init / math.sqrt(self.out_features))
+
+  def _scale_noise(self, size):
+    x = torch.randn(size, device=self.weight_mu.device)
+    return x.sign().mul_(x.abs().sqrt_())
+
+  def reset_noise(self):
+    epsilon_in = self._scale_noise(self.in_features)
+    epsilon_out = self._scale_noise(self.out_features)
+    self.weight_epsilon.copy_(epsilon_out.ger(epsilon_in))
+    self.bias_epsilon.copy_(epsilon_out)
+
+  def forward(self, input):
+    if self.training:
+      return F.linear(input, self.weight_mu + self.weight_sigma * self.weight_epsilon, self.bias_mu + self.bias_sigma * self.bias_epsilon)
+    else:
+      return F.linear(input, self.weight_mu, self.bias_mu)
+
+
+
 class NoisyLinear(nn.Module):
     def __init__(self, in_features, out_features, std_init: float = 0.1):
         super(NoisyLinear, self).__init__()
@@ -48,18 +89,6 @@ class NoisyLinear(nn.Module):
             return F.linear(x,
                             self.weight_mu,
                             self.bias_mu)
-
-    # def forward_(self, x: T.Tensor) -> T.Tensor:
-    #     if self.evaluation_mode:
-    #         # print('nl-eval-mode')
-    #         return F.linear(x,
-    #                         self.weight_mu,
-    #                         self.bias_mu)
-    #     else:
-    #         # print('nl-train-mode')
-    #         return F.linear(x,
-    #                         self.weight_mu + self.weight_sigma * self.weight_epsilon,
-    #                         self.bias_mu   + self.bias_sigma   * self.bias_epsilon)
 
     def reset_parametrs(self):
         mu_range = 1 / math.sqrt(self.in_features)
@@ -99,10 +128,8 @@ class NoisyNetwork(nn.Module):
                         out_features=out_dim,
                         std_init=configs['std'])
         )
-        # self.h = NoisyLinear(in_features=in_dim, out_features=configs['arch'][1], std_init=configs['std'])
-        # self.z = NoisyLinear(in_features=configs['arch'][1], out_features=out_dim, std_init=configs['std'])
 
-        # self.apply(_init_weights)
+        # self.
 
     def forward(self, x: T.Tensor) -> T.Tensor:
         return self.net(x)
@@ -145,8 +172,6 @@ class Encoder(nn.Module):
                 )
 
             self.feature_dim = configs['arch'][1]
-
-        # self.apply(_init_weights)
 
     def forward(self, x: T.Tensor) -> T.Tensor:
         latent_features = self.net(x)

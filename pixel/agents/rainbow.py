@@ -20,8 +20,6 @@ from torch.nn.utils import clip_grad_norm_
 
 from pixel.agents._mfrl import MFRL
 from pixel.networks.value_functions import NDCQNetwork
-# from pixel.networks.dnns2 import DQN
-# from pixel.utils.tools import kill_process
 
 
 class RainbowAgent:
@@ -35,10 +33,15 @@ class RainbowAgent:
         self._build()
 
     def _build(self):
+        net_cfgs = self.configs['critic']['network']
+        optimizer = 'T.optim.' + net_cfgs['optimizer']['type']
+        lr = net_cfgs['optimizer']['lr']
+        eps = net_cfgs['optimizer']['eps']
         self.online_net, self.target_net = self._set_q(), self._set_q()
         self.target_net.load_state_dict(self.online_net.state_dict())
         self.online_net.train(), self.target_net.train()
         for p in self.target_net.parameters(): p.requires_grad = False
+        self.optimizer = eval(optimizer)(self.online_net.parameters(), lr=lr, eps=eps)
 
     def _set_q(self):
         obs_dim, act_dim = self.obs_dim, self.act_dim
@@ -47,22 +50,14 @@ class RainbowAgent:
         seed, device = self.seed, self._device_
         return NDCQNetwork(obs_dim, act_dim, net_cfgs, hyperparameters, seed, device)
 
-    # def get_q(self, observation, action):
-    #     return self.online_net(observation).gather(1, action)
-
-    # def get_double_q_target(self, observation):
-    #     with T.no_grad():
-    #         return self.target_net(observation).gather(1, self.online_net(observation).argmax(dim=1, keepdim=True))
-
     def get_greedy_action(self, observation, evaluation=False): # Select Action(s) based on greedy-policy
         with T.no_grad():
-            # observation = np.asarray(observation, dtype=np.float32)
             observation = T.tensor(observation, dtype=T.float32, device=self._device_)
             if evaluation or self.configs['environment']['n-envs']==0:
-                q_values, q_actions = self.online_net(observation.unsqueeze(0)) # [N=1, Stacks, H, W] --> ([A], [1])
+                _, q_actions = self.online_net(observation.unsqueeze(0)) # [N=1, Stacks, H, W] --> ([A], [1])
                 return q_actions.item()#.cpu()#.numpy()
             else:
-                q_values, q_actions = self.online_net(observation) # [N=Xenvs, Stacks, H, W] --> ([N=Xenvs, A], [N=Xenvs])
+                _, q_actions = self.online_net(observation) # [N=Xenvs, Stacks, H, W] --> ([N=Xenvs, A], [N=Xenvs])
                 return q_actions.cpu().numpy()
 
     def get_e_greedy_action(self, observation, epsilon=0.001, evaluation=True): # Select Action(s) based on greedy-policy
@@ -74,9 +69,10 @@ class RainbowAgent:
     def get_action(self, observation, evaluation=False): # interaction
         return self.get_greedy_action(observation, evaluation)
 
-    # def _evaluation_mode(self, mode=False):
-    #     self.online_net._evaluation_mode(mode)
-    #     self.target_net._evaluation_mode(mode)
+    def evaluate_q(self, observation):
+        with T.no_grad():
+            q_values, _ = self.online_net(observation.unsqueeze(0))
+            return q_values.max(1)[0].item()
 
 
 
@@ -135,7 +131,6 @@ class RainbowLearner(MFRL):
             mask = np.ones([max(1, n_envs)], dtype=bool)
             T, I = 0, 0
             while T<LT:
-                # print('observation: ', observation.shape)
                 if (I%Lf==0): self.agent.online_net.reset_noise()
 
                 observation, Z, L, Traj_new, terminated, truncated = self.interact(observation, Z, L, T, Traj)
@@ -172,10 +167,8 @@ class RainbowLearner(MFRL):
                     total_time_real = cur_time_real - start_time_real
                     sps = T/total_time_real
                     SPSList.append(sps)
-                    # self.agent._evaluation_mode(True)
                     self.agent.online_net.eval()
                     VZ, VS, VL = self.evaluate()
-                    # self.agent._evaluation_mode(False)
                     self.agent.online_net.train()
                     logs['data/env_buffer_size                '] = self.buffer.size()
                     logs['training/rainbow/Jq                 '] = Jq
@@ -202,10 +195,8 @@ class RainbowLearner(MFRL):
         total_time_real = cur_time_real - start_time_real
         sps = T/total_time_real
         SPSList.append(sps)
-        # self.agent._evaluation_mode(True)
         self.agent.online_net.eval()
         VZ, VS, VL = self.evaluate()
-        # self.agent._evaluation_mode(False)
         # self.agent.online_net.train()
         logs['data/env_buffer_size                '] = self.buffer.size()
         logs['training/rainbow/Jq                 '] = Jq
@@ -260,10 +251,10 @@ class RainbowLearner(MFRL):
         Jq_biased = self.compute_Jq_rainbow(batch)
         Jq = T.mean(importance_ws * Jq_biased)
 
-        self.agent.online_net.optimizer.zero_grad()
+        self.agent.optimizer.zero_grad()
         Jq.backward()
         clip_grad_norm_(self.agent.online_net.parameters(), norm_clip)
-        self.agent.online_net.optimizer.step()
+        self.agent.optimizer.step()
 
         Jq_biased = Jq_biased.detach().cpu().numpy()
         new_prios = Jq_biased # + prio_eps
@@ -288,7 +279,7 @@ class RainbowLearner(MFRL):
         returns = batch['returns'] # [N]
         observations_next = batch['observations_next'] # [N, Stacks, H, W]
         terminals = batch['terminals'] # [N]
-        # terminals2 = batch['terminals2'] # [N]
+        # nonterminals = batch['nonterminals'] # [N]
 
         # print('observations: ', observations.shape)
         # print('actions: ', actions.shape)
@@ -308,15 +299,9 @@ class RainbowLearner(MFRL):
 
             # Tz (Belleman op)
             Tz = returns.unsqueeze(1)\
-                + (gamma**n_steps)\
-                * (1-terminals)\
+                + (1-terminals)\
+                * (gamma**n_steps)\
                 * self.agent.online_net.support.unsqueeze(0)
-            # Tz2 = returns.unsqueeze(1)\
-            #     + (gamma**n_steps)\
-            #     * (1-terminals2.unsqueeze(1))\
-            #     * self.agent.online_net.support.unsqueeze(0)
-            # print('Tz: ', Tz)
-            # print('Tz2: ', Tz2)
             Tz = Tz.clamp(min=Vmin, max=Vmax)
             b = (Tz - Vmin) / delatZ
 
@@ -333,7 +318,6 @@ class RainbowLearner(MFRL):
             ).unsqueeze(1).expand(batch_size, atom_size).to(actions)
 
             m = observations.new_zeros(batch_size, atom_size)
-
             m.view(-1).index_add_(
                 0, (lb+offset).view(-1), (q_probs_next*(ub.float()-b)).view(-1) )
             m.view(-1).index_add_(
@@ -356,6 +340,7 @@ class RainbowLearner(MFRL):
         beta_increase = fraction * (1-beta_i)
         self.buffer.beta = min(beta + beta_increase, 1)
 
+
     def func2(self):
         pass
 
@@ -374,7 +359,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-22" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-23" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:

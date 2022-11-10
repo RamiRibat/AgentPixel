@@ -22,8 +22,6 @@ python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 8 --device 'cu
 
 
 module load cuda-11.3
-
-
 srun -c 32 --gres=gpu:1 --mem=16GB --qos=nopreemption -p interactive --pty bash
 
 
@@ -45,3 +43,9 @@ python -m pixel.run --alg DERainbow --env ALE/Pong-v5 --device 'cuda' --wb --see
 
 conda activate pixel
 python -m pixel.run --alg DERainbow --env ALE/Qbert-v5 --device 'cuda' --wb --seed
+
+
+
+
+conda activate pixel
+python -m pixel.run --alg DERainbow --env Freeway-v4 --device 'cuda' --wb --seed

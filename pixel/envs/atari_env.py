@@ -32,7 +32,7 @@ class AtariEnv(gym.Wrapper):
         self.seed = seed
         self._device_ = device
 
-        # self._seed()
+        # self._seed(seed)
 
         self.lives = 0
         self.life_terminated = False
@@ -44,25 +44,8 @@ class AtariEnv(gym.Wrapper):
 
     # def _seed(self, seed):
     #     seed = seed + np.random.randint(1, 10000)
-    #     self.ale.setInt('random_seed', seed)
-    #     self.env.env.env.seed(self.seed)
-
-    def reset(self, seed=None):
-        if self.life_terminated and not self.eval:
-            # print(f'RESET (life-termination)')
-            # self.env.env.life_terminated = False
-            # observation, _, _, _, info = self.env.step(0, single_frame = True) # Take 1 NO-OP action only
-            # observation, _, _, _, info = self.step(0, single_frame = True) # Take 1 NO-OP action only
-            observation, info = self.env.reset(life_terminated=True)
-        else: # eval or train(lives=0)
-            # print(f'RESET (normal)')
-            observation, info = self.env.reset() # Take 30 NO-OP actions
-
-        # observation, info = self.env.reset()
-
-        observation = np.asarray(observation, dtype=np.float32)
-
-        return observation, info
+    #     # self.ale.setInt('random_seed', seed)
+    #     self.env.env.env.seed(seed)
 
     def step(self, action, single_frame = False):
         # return self.env.step(action)
@@ -74,6 +57,21 @@ class AtariEnv(gym.Wrapper):
         self.life_terminated = self.env.env.life_terminated
         self.lives = self.env.env.lives
         return observation_next, reward, terminated, truncated, info
+
+    def reset(self):
+        # return self.env.reset()
+        if self.life_terminated and not self.eval:
+            # print(f'RESET (life-termination)')
+            # observation, _, _, _, info = self.env.step(0, single_frame = True) # Take 1 NO-OP action only
+            # observation, _, _, _, info = self.step(0, single_frame = True) # Take 1 NO-OP action only
+            observation, info = self.env.reset(life_terminated=True) # Take 1 NO-OP action only
+        else: # eval or train(lives=0)
+            # print(f'RESET (normal)')
+            observation, info = self.env.reset() # Take 30 NO-OP actions
+
+        observation = np.asarray(observation, dtype=np.float32)
+
+        return observation, info
 
     def render(self):
         return self.env.render()
