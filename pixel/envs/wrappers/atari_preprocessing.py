@@ -215,8 +215,8 @@ class AtariPreprocessing(gym.Wrapper):
             reset_info = {}
             _, _, terminated, truncated, step_info = self.env.step(0)
             reset_info.update(step_info)
-            if terminated or truncated:
-                _, reset_info = self.env.reset(**kwargs)
+            # if terminated or truncated:
+            #     _, reset_info = self.env.reset(**kwargs)
             #     self.lives = self.ale.lives()
         else:
             # print(f'RESET (N)')
@@ -233,7 +233,7 @@ class AtariPreprocessing(gym.Wrapper):
                     _, reset_info = self.env.reset(**kwargs)
 
         self.life_terminated = False
-        self.game_over = False
+        # self.game_over = False
         self.lives = self.ale.lives()
 
         if self.grayscale_obs:
