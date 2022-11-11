@@ -173,6 +173,7 @@ class RainbowLearner(MFRL):
                     logs['data/env_buffer_size                '] = self.buffer.size()
                     logs['training/rainbow/Jq                 '] = Jq
                     logs['training/rainbow/beta               '] = self.buffer.beta
+                    # logs['training/rainbow/beta               '] = self.buffer.priority_weight
                     logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
                     logs['learning/real/rollout_return_std    '] = np.std(ZList)
                     logs['learning/real/rollout_length        '] = np.mean(LList)
@@ -201,6 +202,7 @@ class RainbowLearner(MFRL):
         logs['data/env_buffer_size                '] = self.buffer.size()
         logs['training/rainbow/Jq                 '] = Jq
         logs['training/rainbow/beta               '] = self.buffer.beta
+        # logs['training/rainbow/beta               '] = self.buffer.priority_weight
         logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
         logs['learning/real/rollout_return_std    '] = np.std(ZList)
         logs['learning/real/rollout_length        '] = np.mean(LList)
@@ -259,6 +261,7 @@ class RainbowLearner(MFRL):
         Jq_biased = Jq_biased.detach().cpu().numpy()
         new_prios = Jq_biased # + prio_eps
         self.buffer.update_prios(idxs, new_prios)
+        # self.buffer.update_priorities(idxs, new_prios)
 
         return Jq
 
@@ -278,8 +281,8 @@ class RainbowLearner(MFRL):
         actions = batch['actions'] # [N]
         returns = batch['returns'] # [N]
         observations_next = batch['observations_next'] # [N, Stacks, H, W]
-        terminals = batch['terminals'] # [N]
-        # nonterminals = batch['nonterminals'] # [N]
+        # terminals = batch['terminals'] # [N]
+        nonterminals = batch['nonterminals'] # [N]
 
         # print('observations: ', observations.shape)
         # print('actions: ', actions.shape)
@@ -297,9 +300,8 @@ class RainbowLearner(MFRL):
             self.agent.target_net.reset_noise()
             q_probs_next = self.agent.target_net.q_probs(observations_next, q_actions_next)
 
-            # Tz (Belleman op)
             Tz = returns.unsqueeze(1)\
-                + (1-terminals)\
+                + (nonterminals)\
                 * (gamma**n_steps)\
                 * self.agent.online_net.support.unsqueeze(0)
             Tz = Tz.clamp(min=Vmin, max=Vmax)
@@ -331,6 +333,15 @@ class RainbowLearner(MFRL):
     def update_target_net(self) -> None:
         self.agent.target_net.load_state_dict(self.agent.online_net.state_dict())
 
+    # def _update_buffer_beta(self, steps):
+    #     LT = self.configs['learning']['total-steps']
+    #     iT = self.configs['learning']['init-steps']
+    #     beta_i = self.configs['algorithm']['hyperparameters']['beta']
+    #     beta = self.buffer.priority_weight
+    #     fraction = steps / (LT-iT)
+    #     beta_increase = fraction * (1-beta_i)
+    #     self.buffer.priority_weight = min(beta + beta_increase, 1)
+
     def update_buffer_beta(self, steps):
         LT = self.configs['learning']['total-steps']
         iT = self.configs['learning']['init-steps']
@@ -359,7 +370,9 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-24" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-25" # H < -2.7
+    # group_name = f"{algorithm}-200k-{environment}-X{n_envs}" # H < -2.7
+    # group_name = f"{algorithm}-200M-{environment}-X{n_envs}" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:

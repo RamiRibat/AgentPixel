@@ -88,6 +88,7 @@ class SegmentTree():
   def total(self):
     return self.sum_tree[0]
 
+
 class ReplayMemory():
   # def __init__(self, args, capacity):
   def __init__(self, capacity):
@@ -103,7 +104,7 @@ class ReplayMemory():
     self.transitions = SegmentTree(capacity)  # Store transitions in a wrap-around cyclic buffer within a sum tree for querying priorities
 
   def size(self) -> int:
-    return self.capacity if self.transitions.full else self.transitions.idx
+    return self.capacity if self.transitions.full else self.transitions.index
 
   # Adds state and action at time t, reward and terminal at time t + 1
   def append_sard(self, state, action, reward, terminal):

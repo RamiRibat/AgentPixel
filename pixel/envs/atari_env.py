@@ -61,12 +61,12 @@ class AtariEnv(gym.Wrapper):
     def reset(self):
         # return self.env.reset()
         if self.life_terminated and not self.eval:
-            # print(f'RESET (life-termination)')
+            # print(f'RESET (life-termination) | lives={self.lives}')
             # observation, _, _, _, info = self.env.step(0, single_frame = True) # Take 1 NO-OP action only
             # observation, _, _, _, info = self.step(0, single_frame = True) # Take 1 NO-OP action only
             observation, info = self.env.reset(life_terminated=True) # Take 1 NO-OP action only
         else: # eval or train(lives=0)
-            # print(f'RESET (normal)')
+            # print(f'RESET (normal) | lives={self.lives}')
             observation, info = self.env.reset() # Take 30 NO-OP actions
 
         observation = np.asarray(observation, dtype=np.float32)

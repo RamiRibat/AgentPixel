@@ -233,7 +233,7 @@ class AtariPreprocessing(gym.Wrapper):
                     _, reset_info = self.env.reset(**kwargs)
 
         self.life_terminated = False
-        # self.game_over = False
+        self.game_over = False
         self.lives = self.ale.lives()
 
         if self.grayscale_obs:
