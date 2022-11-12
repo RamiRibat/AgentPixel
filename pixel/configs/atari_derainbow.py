@@ -14,8 +14,9 @@ configurations = {
     },
 
     'environment': {
+        'name': 'ALE/Alien-v5',
         # 'name': 'ALE/Pong-v5',
-        'name': 'ALE/Hero-v5',
+        # 'name': 'ALE/Hero-v5',
         'domain': 'atari',
         'state': 'pixel',
         'action': 'discrete',

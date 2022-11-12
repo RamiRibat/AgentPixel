@@ -369,21 +369,28 @@ def main(configurations, seed, device, wb):
     environment = configurations['environment']['name']
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
+    LT = configurations['learning']['total-steps']
 
     # group_name = f"{algorithm}-100k-{environment}-X{n_envs}-28" # H < -2.7
     # group_name = f"{algorithm}-200k-{environment}-X{n_envs}" # H < -2.7
-    # group_name = f"{algorithm}-200M-{environment}-X{n_envs}" # H < -2.7
-    group_name = f"{algorithm}-{environment}" # H < -2.7
+    # group_name = f"{algorithm}-200M-{environment}" # H < -2.7
+
+    if n_envs > 0:
+        group_name = f"{algorithm}-{environment}-X{n_envs}"
+    else:
+        group_name = f"{algorithm}-{environment}"
+
     exp_prefix = f"seed:{seed}"
+
+    project_name = 'ATARI-100-200K' if LT <= int(200e3) else 'ATARI-50M'
 
     if wb:
         wandb.init(
             group=group_name,
             name=exp_prefix,
             # project=f'ATARI',
-            project=f'ATARI-100-200K',
-            # project=f'ATARI-200K',
-            # project=f'ATARI-200M',
+            # project=f'ATARI-100-200K',
+            project=project_name,
             config=configurations
         )
 
