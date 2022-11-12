@@ -1,6 +1,6 @@
 # Agent Pixel
 
-## RL Implementation for Discrete-Controlled & Pixel-based Environments
+## RL for Discrete-Controlled & Pixel-based Environments
 
 ## Algorithms
 Algorithms we are re-implementing/plannning to re-implement:
