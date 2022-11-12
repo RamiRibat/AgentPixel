@@ -80,11 +80,11 @@ conda activate pixel
 python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 0 --device 'cuda' --wb --seed 1 2 3
 ```
 * ```--alg``` is the algorithm's name [DQN, DDQN, PER, Rainbow, DERainbow]
-* ```--env``` is for environment's id [e.g. Pong-v4, ALE/Pong-v5]
-* ```--n-envs``` is for number of envs (0: single-non-vectorized setting, 1+: vectorized setting)
-* ```--device``` is for device used for networks training
+* ```--env``` is for environment's id [e.g. Alien-v4, ALE/Alien-v5]
+* ```--n-envs``` is for number of envs (0 (default): single-non-vectorized setting, 1+: vectorized setting)
+* ```--device``` is for device used for networks training (default: 'cpu')
 * ```--wb``` is for activating W&B (default: False)
-* ```--seed``` is for random seeds, one or more
+* ```--seed``` is for random seed(s), one or more (default: 0)
 
 
 ## Acknowledgement
