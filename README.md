@@ -5,20 +5,20 @@
 ## Algorithms
 Algorithms we are re-implementing/plannning to re-implement:
 
-| ID | Agent | Classic | Atari | MuJoCo | Distributed |
-| --- | --- | :---: | :---: | :---: | :---: |
-| 1 | DQN | ✅ | ✅ |  | ☑️ |
-| 2 | Double DQN | ✅ |  |  |  |
-| 3 | PER-DQN | ✅ |  |  |  |
-| 4 | Dueling DQN |  |  |  |  |
-| 5 | A3C |  |  |  | ☑️ |
-| 6 | C51 |  |  |  |  |
-| 7 | Noisy DQN |  |  |  |  |
-| 8 | Rainbow | ✅ | ✅ |  |  |
-| 9 | R2D2 |  |  |  | ☑️ |
-| 10 | DERainbow |  | ✅ |  |  |
-| 11 | NGU |  |  |  | ☑️ |
-| 12 | Agnet57 |  |  |  | ☑️ |
+| ID | Agent | Classic | Atari | MuJoCo | Distributed | SFs | Pre-Training |
+| --- | --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1 | DQN | ✅ | ✅ |  | ☑️ |  |  |
+| 2 | Double DQN | ✅ |  |  |  |  |  |
+| 3 | PER-DQN | ✅ |  |  |  |  |  |
+| 4 | Dueling DQN |  |  |  |  |  |  |
+| 5 | A3C |  |  |  | ☑️ |  |  |
+| 6 | C51 |  |  |  |  |  |  |
+| 7 | Noisy DQN |  |  |  |  |  |  |
+| 8 | Rainbow | ✅ | ✅ |  |  |  |  |
+| 9 | R2D2 |  |  |  | ☑️ |  |  |
+| 10 | DERainbow |  | ✅ |  |  |  |  |
+| 11 | NGU |  |  |  | ☑️ |  |  |
+| 12 | Agnet57 |  |  |  | ☑️ |  |  |
 
 ## Selected Results
 ### Atari 100k/200k DERainbow
