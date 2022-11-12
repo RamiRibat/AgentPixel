@@ -151,8 +151,8 @@ class RainbowLearner(MFRL):
                 RainbowLT.refresh()
 
                 if (T>iT): # Start training after iT
-                    # self.update_buffer_beta(steps)
-                    self.update_buffer_beta2(steps)
+                    self.update_buffer_beta(steps)
+                    # self.update_buffer_beta2(steps)
                     if (I%Lf==0):
                         for g in range(G):
                             Jq = self.train_rainbow(I)
@@ -261,8 +261,8 @@ class RainbowLearner(MFRL):
 
         Jq_biased = Jq_biased.detach().cpu().numpy()
         new_prios = Jq_biased # + prio_eps
-        # self.buffer.update_prios(idxs, new_prios)
-        self.buffer.update_priorities(idxs, new_prios)
+        self.buffer.update_prios(idxs, new_prios)
+        # self.buffer.update_priorities(idxs, new_prios)
 
         return Jq
 
@@ -370,7 +370,7 @@ def main(configurations, seed, device, wb):
     domain = configurations['environment']['domain']
     n_envs = configurations['environment']['n-envs']
 
-    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-27" # H < -2.7
+    group_name = f"{algorithm}-100k-{environment}-X{n_envs}-28" # H < -2.7
     # group_name = f"{algorithm}-200k-{environment}-X{n_envs}" # H < -2.7
     # group_name = f"{algorithm}-200M-{environment}-X{n_envs}" # H < -2.7
     exp_prefix = f"seed:{seed}"
