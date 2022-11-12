@@ -43,7 +43,7 @@ configurations = {
         'init-steps': int(2000), # 1600 in van Hasselt et al. (2019)
         'expl-steps': int(1000), # 0 in van Hasselt et al. (2019)
         'learn-freq': 1, # iteration
-        'grad-steps': 1,
+        'grad-steps': 1, # iteration
         'render': False,
     },
 

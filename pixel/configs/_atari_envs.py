@@ -1,5 +1,6 @@
 
 AtariEnvs = [
+    'ALE/Alien-v5',
     'ALE/Asterix-v5',
     'ALE/Boxing-v5',
     'ALE/Breakout-v5',
