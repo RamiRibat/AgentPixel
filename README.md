@@ -21,7 +21,7 @@ Algorithms we are re-implementing/plannning to re-implement:
 | 12 | Agnet57 |  |  |  | ☑️ |  |  |
 
 ## Selected Results
-### Atari 100k/200k DERainbow
+### Atari 100k/200k DERainbow | [W&B](https://wandb.ai/rami-ahmed/ATARI-100-200K?workspace=user-rami-ahmed)
 | Game | 100k | 200k | 200k x1 | 200k x8 | 200k x64 |
 | --- | :---: | :---: | :---: | :---: | :---: |
 | Alien | 912 ±338 |  |  |  |  |
@@ -30,7 +30,7 @@ Algorithms we are re-implementing/plannning to re-implement:
 | Pong | -18.3 ±4 |  |  |  |  |
 | Qbert | 772 ±364 |  |  |  |  |
 
-### Atari 200M Rainbow x64
+### Atari 200M Rainbow x64 | [W&B](https://)
 | Game | 2M | 5M | 10M | 25M | 50M |
 | --- | :---: | :---: | :---: | :---: | :---: |
 | Alien |  |  |  |  |  |
