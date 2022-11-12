@@ -173,7 +173,7 @@ class RainbowLearner(MFRL):
                     self.agent.online_net.train()
                     logs['data/env_buffer_size                '] = self.buffer.size()
                     logs['training/rainbow/Jq                 '] = Jq
-                    # logs['training/rainbow/beta               '] = self.buffer.beta
+                    logs['training/rainbow/beta               '] = self.buffer.beta
                     # logs['training/rainbow/beta               '] = self.buffer.priority_weight
                     logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
                     logs['learning/real/rollout_return_std    '] = np.std(ZList)
@@ -202,7 +202,7 @@ class RainbowLearner(MFRL):
         # self.agent.online_net.train()
         logs['data/env_buffer_size                '] = self.buffer.size()
         logs['training/rainbow/Jq                 '] = Jq
-        # logs['training/rainbow/beta               '] = self.buffer.beta
+        logs['training/rainbow/beta               '] = self.buffer.beta
         # logs['training/rainbow/beta               '] = self.buffer.priority_weight
         logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
         logs['learning/real/rollout_return_std    '] = np.std(ZList)
