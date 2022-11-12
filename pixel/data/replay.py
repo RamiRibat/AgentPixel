@@ -151,27 +151,34 @@ class ReplayBuffer:
 
     def append_sard(self, s, a, r, d) -> None:
         pixel = self.configs['obs-type'] == 'pixel'
+
         s = s[-1] if self.history > 1 else s
+
         if pixel: s = (s*255).astype(np.uint8)
         sard = (self.t, s, a, r, not d) # nonterminal
+
         if self.configs['buffer-type'] == 'PER':
             self.transitions.append(sard, self.transitions.max)
         else:
             self.transitions.append(sard)
+
         self.t = 0 if d else self.t+1
 
     def append_sard_vec(self, s, a, r, d, mask) -> None:
         pixel = self.configs['obs-type'] == 'pixel'
+
         for i in range(len(mask)):
             if mask[i]:
                 if pixel:
                     sard = (self.t, ( (s[i][-1] if self.history > 1 else s[i]) *255 ).astype(np.uint8), a[i], r[i], not d[i])
                 else:
                     sard = (self.t, s[i][-1] if self.history > 1 else s[i], a[i], a[i], r[i], not d[i])
+
                 if self.configs['buffer-type'] == 'PER':
                     self.transitions.append(sard, self.transitions.max)
                 else:
                     self.transitions.append(sard)
+                    
         self.t = 0 if np.all(d) else self.t+1
 
     def sample_batch(self, batch_size) -> Dict:

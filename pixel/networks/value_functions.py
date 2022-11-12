@@ -15,7 +15,7 @@ class NDCQNetwork(nn.Module):
         obs_dim, act_dim,
         configs, hyper_para,
         seed = 0, device='cpu'):
-        print('Initialize NDCQNetwork')
+        # print('Initialize NDCQNetwork')
         super(NDCQNetwork, self).__init__()
 
         # optimizer = 'T.optim.' + configs['optimizer']['type']

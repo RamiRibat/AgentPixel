@@ -15,7 +15,27 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-valid_algorithms = {'DQN': 'dqn', 'Rainbow': 'rainbow', 'DERainbow': 'rainbow'}
+valid_algorithms1 = {'DQN': 'dqn', 'Rainbow': 'rainbow', 'DERainbow': 'rainbow'}
+
+valid_algorithms = {
+    'DQN': 'dqn', # Deep Q-Network ~ DQN
+    'nsDQN': 'nsdqn', # N-Steps (DQN)
+    'DDQN': 'ddqn', # Double (DQN) ~ DDQN
+    'PER': 'per', # Prioritized Experience Replay (DQN) ~ PER
+    'DuellingDQN': 'duellingdqn', # Duelling (DQN)
+    'DDDQN': 'dddqn', # Duelling (DDQN) ~ DDDQN
+    # 'A3C': 'a3c', # Asynchronous Advantage Actor-Critic
+    # 'C51': 'c51' # Categorical 51-atom
+    # 'NoisyDQN': 'noisydqn', # Noisy (DQN)
+    # 'NoisyDoubleDQN': 'noisydoubledqn', # Noisy Bouble (DQN)
+    # 'NoisyDuellingDQN': 'noisyduellingdqn', # Noisy Duelling (DQN)
+    # 'NoisyDDDQN': 'noisyduellingdqn', # Noisy Duelling Double (DQN)
+    'Rainbow': 'rainbow',
+    # 'R2D2': 'r2d2',
+    'DERainbow': 'rainbow',
+    # 'NGU': 'ngu',
+    # 'Agent57': 'agent57',
+    }
 
 
 def find_agent(alg):
@@ -34,12 +54,13 @@ def experiment_grid(args):
     info = {}
     for alg in args.alg:
         agent = find_agent(alg)
-        configs = args.task.lower() + '_' + alg.lower()
+        # configs = args.task.lower() + '_' + alg.lower() + (f'x{n_envs}' if n_envs>0 else '')
         info['alg'] = alg
         for env in args.env:
             info['env'] = env
             for n in args.n_envs:
                 info['n'] = n
+                configs = args.task.lower() + '_' + alg.lower() + (f'x{n}' if n>0 else '')
                 exp_grid.append([agent, configs, deepcopy(info)])
     return exp_grid
 

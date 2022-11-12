@@ -133,8 +133,8 @@ class RainbowLearner(MFRL):
             while T<LT:
                 if (I%Lf==0): self.agent.online_net.reset_noise()
 
-                observation, Z, L, Traj_new, terminated, truncated = self.interact(observation, Z, L, T, Traj)
-                # observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj)
+                # observation, Z, L, Traj_new, terminated, truncated = self.interact(observation, Z, L, T, Traj)
+                observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj)
 
                 if (Traj_new - Traj) > 0:
                     ZList.append(lastZ), LList.append(lastL)
@@ -142,9 +142,9 @@ class RainbowLearner(MFRL):
                     lastZ, lastL = Z, L
                 Traj = Traj_new
 
-                T += 1 # single
-                steps = 1
-                # T += steps # vec
+                # T += 1 # single
+                # steps = 1
+                T += steps # vec
 
                 RainbowLT.n = T
                 RainbowLT.set_postfix({'Traj': Traj, 'LL': lastL, 'LZ': lastZ})
