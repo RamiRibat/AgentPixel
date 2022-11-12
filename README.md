@@ -20,6 +20,38 @@ Algorithms we are re-implementing/plannning to re-implement:
 | 11 | NGU |  |  |  | ☑️ |  |  |
 | 12 | Agnet57 |  |  |  | ☑️ |  |  |
 
+## How to use this code
+### Installation (Linux Ubuntu/Debian)
+```
+conda create -n pixel
+pip install -e .
+pip install numpy tqdm wandb
+pip install opencv-python ale-py gym[accept-rom-license]
+pip install torch==1.12.0+cu113 --extra-index-url https://download.pytorch.org/whl/cu113
+```
+
+### Installation (MacOS)
+```
+conda create -n pixel
+pip install -e .
+pip install numpy tqdm wandb
+pip install opencv-python ale-py gym[accept-rom-license]
+pip install torch
+```
+
+### Running Experiments
+You can find full default configurations in [pixel/configs](https://github.com/RamiSketcher/AgentPixel/tree/main/pixel/configs), but you can use a few external arguments.
+```
+conda activate pixel
+python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 0 --device 'cuda' --wb --seed 1 2 3
+```
+* ```--alg``` is the algorithm's name [DQN, DDQN, PER, Rainbow, DERainbow]
+* ```--env``` is for environment's id [e.g. Alien-v4, ALE/Alien-v5]
+* ```--n-envs``` is for number of envs (0 (default): single-non-vectorized setting, 1+: vectorized setting)
+* ```--device``` is for device used for networks training (default: 'cpu')
+* ```--wb``` is for activating W&B (default: False)
+* ```--seed``` is for random seed(s), one or more (default: 0)
+
 ## Selected Results
 ### Atari 100k/200k DERainbow | [W&B](https://wandb.ai/rami-ahmed/ATARI-100-200K?workspace=user-rami-ahmed)
 | Game | 100k | 200k | 200k x1 | 200k x8 | 200k x64 |
@@ -53,38 +85,6 @@ Algorithms we are re-implementing/plannning to re-implement:
 | Freeway |  |  |  |  |  |
 | Pong |  |  |  |  |  |
 | Qbert |  |  |  |  |  |
-
-## How to use this code
-### Installation (Linux Ubuntu/Debian)
-```
-conda create -n pixel
-pip install -e .
-pip install numpy tqdm wandb
-pip install opencv-python ale-py gym[accept-rom-license]
-pip install torch==1.12.0+cu113 --extra-index-url https://download.pytorch.org/whl/cu113
-```
-
-### Installation (MacOS)
-```
-conda create -n pixel
-pip install -e .
-pip install numpy tqdm wandb
-pip install opencv-python ale-py gym[accept-rom-license]
-pip install torch
-```
-
-### Running Experiments
-You can find full default configurations in [pixel/configs](https://github.com/RamiSketcher/AgentPixel/tree/main/pixel/configs), but you can use a few external arguments.
-```
-conda activate pixel
-python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 0 --device 'cuda' --wb --seed 1 2 3
-```
-* ```--alg``` is the algorithm's name [DQN, DDQN, PER, Rainbow, DERainbow]
-* ```--env``` is for environment's id [e.g. Alien-v4, ALE/Alien-v5]
-* ```--n-envs``` is for number of envs (0 (default): single-non-vectorized setting, 1+: vectorized setting)
-* ```--device``` is for device used for networks training (default: 'cpu')
-* ```--wb``` is for activating W&B (default: False)
-* ```--seed``` is for random seed(s), one or more (default: 0)
 
 
 ## Acknowledgement
