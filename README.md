@@ -63,16 +63,16 @@ python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 0 --device 'cu
 | Qbert | 772 ±364 |  |  |  |  |  |  |
 
 ### Atari 200M Rainbow x64 | [W&B](https://)
-| Game | 5M x0 | 5M x1 | 5M | 10M | 25M | 50M |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Alien |  |  |  |  |  |  |
-| Asterisk |  |  |  |  |  |  |
-| Boxing |  |  |  |  |  |  |
-| Breakout |  |  |  |  |  |  |
-| Hero |  |  |  |  |  |  |
-| Freeway |  |  |  |  |  |  |
-| Pong |  |  |  |  |  |  |
-| Qbert |  |  |  |  |  |  |
+| Game | 1M | 2M | 5M | 10M | 20M | 30M | 40M | 50M |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Alien |  |  |  |  |  |  |  |  |
+| Asterisk |  |  |  |  |  |  |  |  |
+| Boxing |  |  |  |  |  |  |  |  |
+| Breakout |  |  |  |  |  |  |  |  |
+| Hero |  |  |  |  |  |  |  |  |
+| Freeway |  |  |  |  |  |  |  |  |
+| Pong |  |  |  |  |  |  |  |  |
+| Qbert |  |  |  |  |  |  |  |  |
 
 ### Atari 200M x64
 | Game | DQN | DDQN | PER | Rainbow | R2D2 | NGU | Agent57 |
