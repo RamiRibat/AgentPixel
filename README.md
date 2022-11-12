@@ -5,7 +5,7 @@
 ## Algorithms
 Algorithms we are re-implementing/plannning to re-implement:
 
-| ID | Agent | Classic | Atari | MuJoCo | Distributed | SFs | Pre-Training |
+| ID | Agent | Classic | Atari | MuJoCo | Distributed | Pre-Training | SFs |
 | --- | --- | :---: | :---: | :---: | :---: | :---: | :---: |
 | 1 | DQN | ✅ | ✅ |  | ☑️ |  |  |
 | 2 | Double DQN | ✅ |  |  |  |  |  |
