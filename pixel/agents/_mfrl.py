@@ -43,7 +43,7 @@ class MFRL:
         configs = self.configs['data']
         hyperparameters = self.configs['algorithm']['hyperparameters']
         seed, device = self.seed, self._device_
-        self.buffer = ReplayMemory(int(1e5))
+        self.buffer = ReplayMemory(int(1e5), device)
         # self.buffer = ReplayBuffer(
         #     n_envs=n_envs,
         #     obs_dim=obs_dim,
