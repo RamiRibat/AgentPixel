@@ -21,21 +21,36 @@ Algorithms we are re-implementing/plannning to re-implement:
 | Agnet57 |  |  |  | ☑️ |
 
 ## Selected Results
-### Atari 100k
-| Game | DQN | DDQN | PER | Rainbow | DERainbow |
+### Atari 100k/200k DERainbow
+| Game | 100k | 200k | 200k x1 | 200k x8 | 200k x64 |
 | --- | :---: | :---: | :---: | :---: | :---: |
-| Alien |  |  |  |  |  |
-| Freeway |  |  |  |  |  |
-| Hero |  |  |  |  |  |
+| Alien | 912 ±338 |  |  |  |  |
+| Hero | 27.9 ±3 |  |  |  |  |
+| Freeway | 6815 ±1005 |  |  |  |  |
 | Pong |  |  |  |  |  |
 | Qbert |  |  |  |  |  |
 
-### Atari 200M
-| Game | DQN | DDQN | PER | Rainbow | DERainbow |
+### Atari 200M Rainbow x64
+| Game | 2M | 5M | 10M | 25M | 50M |
 | --- | :---: | :---: | :---: | :---: | :---: |
 | Alien |  |  |  |  |  |
-| Freeway |  |  |  |  |  |
+| Asterisk |  |  |  |  |  |
+| Boxing |  |  |  |  |  |
+| Breakout |  |  |  |  |  |
 | Hero |  |  |  |  |  |
+| Freeway |  |  |  |  |  |
+| Pong |  |  |  |  |  |
+| Qbert |  |  |  |  |  |
+
+### Atari 200M x64
+| Game | DQN | DDQN | PER | Rainbow | ? |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| Alien |  |  |  |  |  |
+| Asterisk |  |  |  |  |  |
+| Boxing |  |  |  |  |  |
+| Breakout |  |  |  |  |  |
+| Hero |  |  |  |  |  |
+| Freeway |  |  |  |  |  |
 | Pong |  |  |  |  |  |
 | Qbert |  |  |  |  |  |
 
