@@ -27,8 +27,8 @@ Algorithms we are re-implementing/plannning to re-implement:
 | Alien | 912 ±338 |  |  |  |  |
 | Hero | 27.9 ±3 |  |  |  |  |
 | Freeway | 6815 ±1005 |  |  |  |  |
-| Pong |  |  |  |  |  |
-| Qbert |  |  |  |  |  |
+| Pong | -18.3 ±4 |  |  |  |  |
+| Qbert | 772 ±364 |  |  |  |  |
 
 ### Atari 200M Rainbow x64
 | Game | 2M | 5M | 10M | 25M | 50M |
