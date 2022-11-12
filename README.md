@@ -54,37 +54,37 @@ python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 0 --device 'cu
 
 ## Selected Results
 ### Atari 100k/200k DERainbow | [W&B](https://wandb.ai/rami-ahmed/ATARI-100-200K?workspace=user-rami-ahmed)
-| Game | 100k | 200k | 200k x1 | 200k x8 | 200k x64 |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| Alien | 912 ±338 |  |  |  |  |
-| Hero | 27.9 ±3 |  |  |  |  |
-| Freeway | 6815 ±1005 |  |  |  |  |
-| Pong | -18.3 ±4 |  |  |  |  |
-| Qbert | 772 ±364 |  |  |  |  |
+| Game | 100k | 200k | 200k x1 | 200k x2 | 200k x4 | 200k x8 | 200k x16 | 200k x64 |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Alien | 912 ±338 |  |  |  |  |  |  |  |
+| Hero | 27.9 ±3 |  |  |  |  |  |  |  |
+| Freeway | 6815 ±1005 |  |  |  |  |  |  |  |
+| Pong | -18.3 ±4 |  |  |  |  |  |  |  |
+| Qbert | 772 ±364 |  |  |  |  |  |  |  |
 
 ### Atari 200M Rainbow x64 | [W&B](https://)
-| Game | 2M | 5M | 10M | 25M | 50M |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| Alien |  |  |  |  |  |
-| Asterisk |  |  |  |  |  |
-| Boxing |  |  |  |  |  |
-| Breakout |  |  |  |  |  |
-| Hero |  |  |  |  |  |
-| Freeway |  |  |  |  |  |
-| Pong |  |  |  |  |  |
-| Qbert |  |  |  |  |  |
+| Game | 5M x0 | 5M x1 | 5M | 10M | 25M | 50M |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Alien |  |  |  |  |  |  |
+| Asterisk |  |  |  |  |  |  |
+| Boxing |  |  |  |  |  |  |
+| Breakout |  |  |  |  |  |  |
+| Hero |  |  |  |  |  |  |
+| Freeway |  |  |  |  |  |  |
+| Pong |  |  |  |  |  |  |
+| Qbert |  |  |  |  |  |  |
 
 ### Atari 200M x64
-| Game | DQN | DDQN | PER | Rainbow | ? |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| Alien |  |  |  |  |  |
-| Asterisk |  |  |  |  |  |
-| Boxing |  |  |  |  |  |
-| Breakout |  |  |  |  |  |
-| Hero |  |  |  |  |  |
-| Freeway |  |  |  |  |  |
-| Pong |  |  |  |  |  |
-| Qbert |  |  |  |  |  |
+| Game | DQN | DDQN | PER | Rainbow | R2D2 | NGU | Agent57 |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Alien |  |  |  |  |  |  |  |
+| Asterisk |  |  |  |  |  |  |  |
+| Boxing |  |  |  |  |  |  |  |
+| Breakout |  |  |  |  |  |  |  |
+| Hero |  |  |  |  |  |  |  |
+| Freeway |  |  |  |  |  |  |  |
+| Pong |  |  |  |  |  |  |  |
+| Qbert |  |  |  |  |  |  |  |
 
 
 ## Acknowledgement
