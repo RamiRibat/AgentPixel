@@ -381,7 +381,7 @@ def main(configurations, seed, device, wb):
             group=group_name,
             name=exp_prefix,
             # project=f'ATARI',
-            project=f'ATARI-100K',
+            project=f'ATARI-100-200K',
             # project=f'ATARI-200K',
             # project=f'ATARI-200M',
             config=configurations
