@@ -373,7 +373,7 @@ def main(configurations, seed, device, wb):
     # group_name = f"{algorithm}-100k-{environment}-X{n_envs}-28" # H < -2.7
     # group_name = f"{algorithm}-200k-{environment}-X{n_envs}" # H < -2.7
     # group_name = f"{algorithm}-200M-{environment}-X{n_envs}" # H < -2.7
-    group_name = f"{algorithm}-{environment}-X{n_envs}" # H < -2.7
+    group_name = f"{algorithm}-{environment}" # H < -2.7
     exp_prefix = f"seed:{seed}"
 
     if wb:
