@@ -58,7 +58,7 @@ class NDCQNetwork(nn.Module):
 
     def q_probs(self, observation: T.Tensor, action: T.Tensor = None, log = False) -> T.Tensor:
         q_atoms = self.distribution(observation)
-        # print(f'QN.q_probs: observation={observation.shape}') # [N, Stacks, H, W]
+        # print(f'\nQN.q_probs: observation={observation.shape}') # [N, Stacks, H, W]
         # print(f'QN.q_probs: q_atoms={q_atoms.shape}') # [N, A, Z]
         if log:
             log_probs = F.log_softmax(q_atoms, dim=2)
@@ -75,10 +75,6 @@ class NDCQNetwork(nn.Module):
 
     def distribution(self, observation: T.Tensor) -> T.Tensor:
         feature = self.feature_layer(observation)
-        # value = self.v_net(feature)
-        # value = value.view(-1, 1, self.atom_size)
-        # advantage = self.adv_net(feature)
-        # advantage = advantage.view(-1, self.act_dim, self.atom_size)
         value = self.mlp_v_z(F.relu(self.mlp_v_h(feature))).view(-1, 1, self.atom_size)
         advantage = self.mlp_a_z(F.relu(self.mlp_a_h(feature))).view(-1, self.act_dim, self.atom_size)
         q_atoms = value + advantage - advantage.mean(dim=1, keepdim=True)

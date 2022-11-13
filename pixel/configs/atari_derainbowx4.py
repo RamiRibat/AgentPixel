@@ -18,7 +18,7 @@ configurations = {
         'domain': 'atari',
         'state': 'pixel',
         'action': 'discrete',
-        'n-envs': [2],
+        'n-envs': [4],
         'asynchronous': True,
         'reward-clip': 1,
         'n-stacks': 4,
@@ -43,15 +43,14 @@ configurations = {
         'init-steps': int(2000), # 1600 in van Hasselt et al. (2019)
         'expl-steps': int(1000), # 0 in van Hasselt et al. (2019)
         'learn-freq': 1, # iteration
-        'grad-steps': 1, # v1
-        # 'grad-steps': 2, # v2
+        'grad-steps': 1,
         'render': False,
     },
 
     'evaluation': {
         'evaluate': True,
-        'eval-freq': int(5e3), # iteration X n-envs
-        'episodes': 2,
+        'eval-freq': int(3e3), # iteration X n-envs
+        'episodes': 10,
         'render': False,
     },
 
@@ -70,8 +69,7 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            'target-update-frequency': int(2000), # v1
-            # 'target-update-frequency': int(1000), # v2
+            'target-update-frequency': int(2000),
         }
     },
 
@@ -110,7 +108,7 @@ configurations = {
         'obs-type': 'pixel',
         'buffer-type': 'PER',
         'capacity': int(2e5),
-        'batch-size': 32, # v1/2
+        'batch-size': 32,
     }
 
 }

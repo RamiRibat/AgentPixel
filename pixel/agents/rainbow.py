@@ -53,7 +53,7 @@ class RainbowAgent:
     def get_greedy_action(self, observation, evaluation=False): # Select Action(s) based on greedy-policy
         with T.no_grad():
             observation = T.tensor(observation, dtype=T.float32, device=self._device_)
-            if evaluation or self.configs['environment']['n-envs']==0:
+            if evaluation or self.configs['environment']['n-envs'] == 0:
                 _, q_actions = self.online_net(observation.unsqueeze(0)) # [N=1, Stacks, H, W] --> ([A], [1])
                 return q_actions.item()#.cpu()#.numpy()
             else:
@@ -192,6 +192,7 @@ class RainbowLearner(MFRL):
                     RainbowLT.refresh()
                 I += 1
 
+        RainbowLT.colour = 'GREEN'
         RainbowLT.close()
 
         total_time_real = cur_time_real - start_time_real
