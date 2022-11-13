@@ -56,7 +56,7 @@ python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 0 --device 'cu
 ### Atari 100k/200k DERainbow | [W&B](https://wandb.ai/rami-ahmed/ATARI-100-200K?workspace=user-rami-ahmed)
 | Game | 100k | 200k | 200k x1 | 200k x2 | 200k x4 | 200k x8 | 200k x16 |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Alien | 912 ±338 | 861.3 ±117 |  |  |  |  |  |
+| Alien | 912 ±338 | 861.3 ±117 | 766 ±130 |  |  |  |  |
 | Hero | 27.9 ±3 | 30.7 ±0.3 |  |  |  |  |  |
 | Freeway | 6815 ±1005 | 8587.7 ±2164 |  |  |  |  |  |
 | Pong | -18.3 ±4 | -16.6 ±3 |  |  |  |  |  |
