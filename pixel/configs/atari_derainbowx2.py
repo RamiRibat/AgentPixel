@@ -39,12 +39,13 @@ configurations = {
     },
 
     'learning': {
-        'total-steps': int(200e3), # 100k in van Hasselt et al. (2019)
-        'init-steps': int(2000), # 1600 in van Hasselt et al. (2019)
-        'expl-steps': int(1000), # 0 in van Hasselt et al. (2019)
+        # 'total-steps': int(200e3), # 100k in van Hasselt et al. (2019)
+        'total-steps': int(400e3), # 100k in van Hasselt et al. (2019)
+        'init-steps': int(4000), # 1600 in van Hasselt et al. (2019)
+        'expl-steps': int(2000), # 0 in van Hasselt et al. (2019)
         'learn-freq': 1, # iteration
-        'grad-steps': 1, # v1
-        # 'grad-steps': 2, # v2
+        'grad-steps': 1, # v1/4
+        # 'grad-steps': 2, # v2/3/5/6
         'render': False,
     },
 
@@ -70,8 +71,8 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            'target-update-frequency': int(2000), # v1
-            # 'target-update-frequency': int(1000), # v2
+            'target-update-frequency': int(2000), # v1/3/4/6
+            # 'target-update-frequency': int(1000), # v2/5
         }
     },
 
@@ -109,8 +110,10 @@ configurations = {
     'data': {
         'obs-type': 'pixel',
         'buffer-type': 'PER',
-        'capacity': int(2e5),
-        'batch-size': 32, # v1/2
+        # 'capacity': int(2e5),
+        'capacity': int(4e5),
+        'batch-size': 32, # v1/2/3
+        # 'batch-size': 64, # v4/5/6
     }
 
 }

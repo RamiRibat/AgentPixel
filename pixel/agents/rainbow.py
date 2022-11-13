@@ -192,8 +192,9 @@ class RainbowLearner(MFRL):
                     RainbowLT.refresh()
                 I += 1
 
+        RainbowLT.n = T
         RainbowLT.colour = 'GREEN'
-        RainbowLT.close()
+        RainbowLT.refresh()
 
         total_time_real = cur_time_real - start_time_real
         sps = T/total_time_real
@@ -220,6 +221,7 @@ class RainbowLearner(MFRL):
 
         self.learn_env.close()
         self.eval_env.close()
+        RainbowLT.close()
 
     def train_rainbow(
         self,
@@ -377,7 +379,7 @@ def main(configurations, seed, device, wb):
     # group_name = f"{algorithm}-200M-{environment}" # H < -2.7
 
     if n_envs > 0:
-        group_name = f"{algorithm}-{environment}-X{n_envs}-v1"
+        group_name = f"{algorithm}-400k-{environment}-X{n_envs}-v1"
     else:
         group_name = f"{algorithm}-{environment}"
 
