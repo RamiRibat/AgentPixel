@@ -385,7 +385,7 @@ def main(configurations, seed, device, wb):
 
     exp_prefix = f"seed:{seed}"
 
-    project_name = 'ATARI-100-200K' if LT <= int(200e3) else 'ATARI-50M'
+    project_name = 'ATARI-100-200K' if LT <= int(400e3) else 'ATARI-50M'
 
     if wb:
         wandb.init(
