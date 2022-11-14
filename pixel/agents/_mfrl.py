@@ -126,7 +126,8 @@ class MFRL:
         mask[mask] = ~terminated[mask]
         mask[mask] = ~truncated[mask]
 
-        if mask.sum()==0:
+        # if mask.sum()==0:
+        if mask.sum()<max(1, n_envs):
             Z, S, L, Traj = 0, 0, 0, Traj+max(1, n_envs)
             observation, info = self.learn_env.reset()
             mask = np.ones([max(1, n_envs)], dtype=bool)

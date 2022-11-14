@@ -178,8 +178,9 @@ class ReplayBuffer:
                     self.transitions.append(sard, self.transitions.max)
                 else:
                     self.transitions.append(sard)
-                    
-        self.t = 0 if np.all(d) else self.t+1
+
+        # self.t = 0 if np.all(d) else self.t+1
+        self.t = 0 if np.any(d) else self.t+1
 
     def sample_batch(self, batch_size) -> Dict:
         if self.configs['buffer-type'] == 'PER':
