@@ -7,8 +7,10 @@ import gym
 from pixel.envs.make import GymMaker
 # from pixel.data.buffers import ReplayBuffer, PERBuffer, NSRBuffer
 
-from pixel.data.replay import ReplayBuffer
-from pixel.data.memory import ReplayMemory
+# from pixel.data.replay import ReplayBuffer
+# from pixel.data.replay2 import ReplayBuffer
+from pixel.data.replay3 import ReplayBuffer
+# from pixel.data.memory import ReplayMemory
 
 
 
@@ -91,7 +93,7 @@ class MFRL:
 
         if T > xT:
             action = self.agent.get_action(observation)
-            # action = self.agent.get_e_greedy_action(observation, epsilon=epsilon)
+            # action = self.agent.get_e_greedy_action_vec(observation, epsilon=[0.1, 0.75])
         else:
             action = self.learn_env.action_space.sample()
 
@@ -128,6 +130,7 @@ class MFRL:
 
         # if mask.sum()==0:
         if mask.sum()<max(1, n_envs):
+            # print(f'RESET | terminated={terminated}')
             Z, S, L, Traj = 0, 0, 0, Traj+max(1, n_envs)
             observation, info = self.learn_env.reset()
             mask = np.ones([max(1, n_envs)], dtype=bool)

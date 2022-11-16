@@ -39,9 +39,12 @@ configurations = {
     },
 
     'learning': {
-        'total-steps': int(200e3), # 100k in van Hasselt et al. (2019)
-        'init-steps': int(2000), # 1600 in van Hasselt et al. (2019)
-        'expl-steps': int(1000), # 0 in van Hasselt et al. (2019)
+        'total-steps': int(100e3), # 100k in van Hasselt et al. (2019)
+        'init-steps': int(1600), # 1600 in van Hasselt et al. (2019)
+        'expl-steps': int(0000), # 0 in van Hasselt et al. (2019)
+        # 'total-steps': int(200e3), # 100k in van Hasselt et al. (2019)
+        # 'init-steps': int(2000), # 1600 in van Hasselt et al. (2019)
+        # 'expl-steps': int(1000), # 0 in van Hasselt et al. (2019)
         'learn-freq': 1, # iteration
         'grad-steps': 1, # iteration
         'render': False,
@@ -50,7 +53,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(1e4), # iteration X n-envs
-        'episodes': 10,
+        'episodes': 2,
         'render': False,
     },
 
@@ -108,7 +111,7 @@ configurations = {
     'data': {
         'obs-type': 'pixel',
         'buffer-type': 'PER',
-        'capacity': int(2e5),
+        'capacity': int(1e5),
         'batch-size': 32,
     }
 

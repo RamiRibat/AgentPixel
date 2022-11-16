@@ -55,32 +55,34 @@ class Buffer: # for UniformReplay
 
 
 class SegmentTree: # for PER
-    def __init__(self, capacity, SARD):
+    def __init__(self, capacity, n_envs, SARD):
         blank_sard, sard_dtype = SARD['blank'], SARD['dtype']
-        self.tree_capacity, self.full = capacity, False
-        self.idx, self.tree_start = 0, 2**(capacity-1).bit_length()-1
-        self.max, self.sum_tree = 1, np.zeros((self.tree_start + capacity, ), dtype=np.float32)
-        self.data = np.array([blank_sard]*capacity, dtype=sard_dtype)
+        # self.tree_capacity, self.full = capacity, False
+        # self.idx, self.tree_start = 0, 2**(capacity-1).bit_length()-1
+        # self.max, self.sum_tree = 1, np.zeros((self.tree_start + capacity, ), dtype=np.float32)
+        # self.data = np.array([blank_sard]*capacity, dtype=sard_dtype)
+        self.trees_capacity, self.full = int(capacity/n_envs), False
+        self.idx, self.trees_start = 0, 2**(self.trees_capacity-1).bit_length()-1
+        self.max, self.sum_trees = np.ones([n_envs]), np.zeros((n_envs, self.trees_start + self.trees_capacity), dtype=np.float32)
+        self.data = np.array([n_envs, [blank_sard]*self.trees_capacity], dtype=sard_dtype)
 
     def total(self):
-        return self.sum_tree[0]
+        return self.sum_trees[:, 0].mean()
 
     def get(self, idx):
-        return self.data[idx % self.tree_capacity]
+        return self.data[:, idx % self.trees_capacity]
 
     def find(self, prios):
         idxs = self._retrieve(np.zeros(prios.shape, dtype=np.int32), prios)
         data_idxs = idxs - self.tree_start
-        return (self.sum_tree[idxs], data_idxs, idxs)
+        return (self.sum_tree[:, idxs], data_idxs, idxs)
 
     def append(self, sard, prio) -> None:
-        # print(f'idx={self.idx} | tree_idx={self.idx+self.tree_start} | prio={prio}')
-        self.data[self.idx] = sard
+        self.data[:, self.idx] = sard
         self._update_prio(self.idx+self.tree_start, prio)
         self.idx = (self.idx+1)%self.tree_capacity # FIFO
         self.full = self.full or self.idx==0
-        self.max = max(prio, self.max)
-        # print('prio: ', self.max)
+        self.max = np.maximum(prio, self.max)
 
     def _retrieve(self, idxs, prios):
         children_idxs = (idxs * 2 + np.expand_dims([1, 2], axis=1))
@@ -95,21 +97,21 @@ class SegmentTree: # for PER
         return self._retrieve(succesor_idxs, succesor_prios)
 
     def _update_prio(self, idx, prio) -> None:
-        self.sum_tree[idx] = prio
+        self.sum_tree[:, idx] = prio
         self._propagate_prio(idx)
-        self.max = max(prio, self.max)
-
-    def _update_prios(self, idxs, prios) -> None:
-        self.sum_tree[idxs] = prios
-        self._propagate_prios(idxs)
-        self.max = max(np.max(prios), self.max)
+        self.max = np.maximum(prio, self.max)
 
     def _propagate_prio(self, idx) -> None:
         parent_idx = (idx-1)//2
         left_idx, right_idx = 2*parent_idx + 1, 2*parent_idx + 2
-        self.sum_tree[parent_idx] = self.sum_tree[left_idx] + self.sum_tree[right_idx]
+        self.sum_tree[:, parent_idx] = self.sum_tree[:, left_idx] + self.sum_tree[:, right_idx]
         if parent_idx != 0:
             self._propagate_prio(parent_idx)
+
+    def _update_prios(self, idxs, prios) -> None:
+        self.sum_tree[:, idxs] = prios
+        self._propagate_prios(idxs)
+        self.max = np.maximum(np.max(prios), self.max)
 
     def _propagate_prios(self, idxs) -> None:
         parent_idxs = (idxs-1) // 2
@@ -120,7 +122,7 @@ class SegmentTree: # for PER
 
     def _update_children_prios(self, idxs) -> None:
         children_idxs = idxs * 2 + np.expand_dims([1, 2], axis=1)
-        self.sum_tree[idxs] = np.sum(self.sum_tree[children_idxs], axis=0)
+        self.sum_tree[:, idxs] = np.sum(self.sum_tree[:, children_idxs], axis=0)
 
 
 
@@ -139,14 +141,13 @@ class ReplayBuffer:
         self.gamma_n = T.tensor([self.gamma**i for i in range(self.n_steps)], dtype=T.float32, device=device)
         if configs['buffer-type'] == 'PER':
             self.omega, self.beta = hyperparameters['omega'], hyperparameters['beta']
-            self.transitions = SegmentTree(self.capacity, self.SARD)
-            # self.
+            self.transitions = SegmentTree(self.capacity, self.n_envs, self.SARD)
         else:
             self.transitions = Buffer(self.capacity, self.SARD)
         self.t = 0
 
     def size(self) -> int:
-        return self.capacity if self.transitions.full else self.transitions.idx
+        return self.capacity if self.transitions.full else self.transitions.idx * self.n_envs
 
     def update_prios(self, idxs, prios) -> None:
         prios = np.power(prios, self.omega)
@@ -171,6 +172,7 @@ class ReplayBuffer:
         pixel = self.configs['obs-type'] == 'pixel'
 
         for i in range(len(mask)):
+            # print('i: ', i)
             if mask[i]:
                 if pixel:
                     sard = (self.t, ( (s[i][-1] if self.history > 1 else s[i]) *255 ).astype(np.uint8), a[i], r[i], not d[i])
@@ -190,7 +192,7 @@ class ReplayBuffer:
             total_prios = self.transitions.total()
             segment_batch = self._sample_batch_from_segments(batch_size, total_prios)
             probs = segment_batch['probs'] / total_prios
-            capacity = self.capacity if self.transitions.full else self.transitions.idx
+            capacity = self.size(self) #self.capacity if self.transitions.full else self.transitions.idx
             weights = (capacity*probs) ** -self.beta
             weights_normz = T.tensor(weights/weights.max(), dtype=T.float32, device=self._device_)
             batch = dict(tree_idxs=segment_batch['tree_idxs'],
@@ -226,13 +228,10 @@ class ReplayBuffer:
     def _sample_batch_from_segments(self, batch_size, total_prios):
         segment_length = total_prios / batch_size
         segment_i = np.arange(batch_size) * segment_length
-        # print(f'total_prio={total_prios} | seg_len={segment_length} | seg_i={segment_i}')
         valid = False
         while not valid:
             samples = np.random.uniform(0.0, segment_length, [batch_size]) + segment_i
-            # print(f'samples={samples}')
             probs, idxs, tree_idxs = self.transitions.find(samples)
-            # print(f'probs={probs} | idxs={idxs} | tree_idxs={tree_idxs}')
             if np.all((self.transitions.idx - idxs) % self.capacity > self.n_steps)\
             and np.all((idxs - self.transitions.idx) % self.capacity >= self.history)\
             and np.all(probs != 0):

@@ -66,6 +66,16 @@ class RainbowAgent:
         else:
             return np.random.randint(0, self.act_dim)
 
+    def get_e_greedy_action_vec(self, observation, epsilon, evaluation=True): # Select Action(s) based on greedy-policy
+        n_envs = self.configs['environment']['n-envs']
+        probs = np.random.random(n_envs)
+        action_rand = np.random.randint(0, self.act_dim, size=n_envs)
+        action = self.get_greedy_action(observation)
+        # print('1.action: ', action)
+        action[probs >= epsilon] = action_rand[probs >= epsilon]
+        # print('2.action: ', action)
+        return action
+
     def get_action(self, observation, evaluation=False): # interaction
         return self.get_greedy_action(observation, evaluation)
 
@@ -233,6 +243,10 @@ class RainbowLearner(MFRL):
 
         batch = self.buffer.sample_batch(batch_size)
         Jq = self.update_online_net(batch)
+
+        # batchs = self.buffer.sample_batch(batch_size)
+        # Jq = self.update_online_net2(batchs)
+
         Jq = Jq.item()
 
         if ((I)%TUf == 0): self.update_target_net()
@@ -264,16 +278,46 @@ class RainbowLearner(MFRL):
 
         Jq_biased = Jq_biased.detach().cpu().numpy()
         new_prios = Jq_biased # + prio_eps
+        # print(f'idxs={idxs}')
+        # print(f'\nprio={new_prios}')
         self.buffer.update_prios(idxs, new_prios)
         # self.buffer.update_priorities(idxs, new_prios)
 
         return Jq
+
+
+    # def update_online_net2(
+    #     self,
+    #     batch_list: Dict[str, np.ndarray]) -> T.Tensor:
+    #
+    #     prio_eps = self.configs['algorithm']['hyperparameters']['prio-eps']
+    #     norm_clip = self.configs['critic']['network']['optimizer']['norm-clip']
+    #
+    #     idxs = batch_list['tree_idxs']
+    #     importance_ws = batch_list['importance_ws']
+    #
+    #     Jq_biased = self.compute_Jq_rainbow(batch_list)
+    #     Jq = T.mean(importance_ws * Jq_biased)
+    #
+    #     self.agent.optimizer.zero_grad()
+    #     Jq.backward()
+    #     clip_grad_norm_(self.agent.online_net.parameters(), norm_clip)
+    #     self.agent.optimizer.step()
+    #
+    #     Jq_biased = Jq_biased.detach().cpu().numpy()
+    #     new_prios = Jq_biased # + prio_eps
+    #     self.buffer.update_prios(idxs_list, new_prios)
+    #     # self.buffer.update_priorities(idxs, new_prios)
+    #
+    #     return Jq
+
 
     def compute_Jq_rainbow(
         self,
         batch: int):
 
         batch_size = self.configs['data']['batch-size']
+        # batch_size = int(batch_size/2)
 
         n_steps = self.configs['algorithm']['hyperparameters']['n-steps']
         atom_size = self.configs['algorithm']['hyperparameters']['atom-size']
@@ -364,7 +408,7 @@ class RainbowLearner(MFRL):
 def main(configurations, seed, device, wb):
 
     print('Start Rainbow experiment')
-    # print('Configurations:\n', json.dumps(configurations, indent=4, sort_keys=False))
+    print('Configurations:\n', json.dumps(configurations, indent=4, sort_keys=False))
     # print('\n')
 
     # LT = configurations[][]
@@ -379,7 +423,7 @@ def main(configurations, seed, device, wb):
     # group_name = f"{algorithm}-200M-{environment}" # H < -2.7
 
     if n_envs > 0:
-        group_name = f"{algorithm}-400k-{environment}-X{n_envs}-v7"
+        group_name = f"{algorithm}-400k-{environment}-X{n_envs}-va"
     else:
         group_name = f"{algorithm}-{environment}"
 
