@@ -97,7 +97,7 @@ configurations = {
             },
             'optimizer': {
                 'type': 'Adam',
-                'lr': 1e-4,
+                'lr': 2*1e-4,
                 'eps': 1.5e-4,
                 'norm-clip': 10,
             },
