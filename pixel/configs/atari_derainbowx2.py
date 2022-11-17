@@ -40,7 +40,6 @@ configurations = {
 
     'learning': {
         'total-steps': int(200e3), # 100k in van Hasselt et al. (2019)
-        # 'total-steps': int(400e3), # 100k in van Hasselt et al. (2019)
         'init-steps': int(4000), # 1600 in van Hasselt et al. (2019)
         'expl-steps': int(2000), # 0 in van Hasselt et al. (2019)
         'learn-freq': 1, # iteration
@@ -52,7 +51,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(1e4), # iteration X n-envs
-        'episodes': 10,
+        'episodes': 0,
         'render': False,
     },
 

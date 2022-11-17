@@ -198,8 +198,8 @@ class ReplayBuffer:
             x_n = int(batch_size/32)
             total_prios_list = np.array([ transitions.total() for transitions in self.transitions_list ])
             prios_probs = total_prios_list / total_prios_list.sum()
-            self.x_sample = np.random.choice(self.x_all, x_n, p=prios_probs)
-            # print(f'prios_probs={prios_probs} | self.x={self.x_sample}')
+            self.x_sample = np.random.choice(self.x_all, x_n, p=prios_probs, replace=False)
+            print(f'self.x={self.x_sample}')
             total_prios_sublist = total_prios_list[self.x_sample]
             segment_batch = self._sample_batch_from_segments(batch_size, total_prios_sublist)
             probs = segment_batch['probs'] #/ np.mean(total_prios_list)
