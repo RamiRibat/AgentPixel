@@ -28,7 +28,7 @@ configurations = {
             'noop_max': 30,
             'frame_skip': 4,
             'screen_size': 84,
-            'terminal_on_life_loss': False,
+            'terminal_on_life_loss': True,
             'grayscale_obs': True,
             'grayscale_newaxis': False,
             'scale_obs': True, # default=False
@@ -37,8 +37,8 @@ configurations = {
 
     'learning': {
         'total-steps': int(50e6), # 50e6 steps X4 = 200e6 frames
-        'init-steps': int(20e3),
-        'expl-steps': int(10e3),
+        'init-steps': int(64e3),
+        'expl-steps': int(32e3),
         'learn-freq': 4, # iteration
         'grad-steps': 4,
         'render': False,
@@ -47,7 +47,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(2.5e3), # iteration X n-envs
-        'episodes': 5,
+        'episodes': 10,
         'render': False,
     },
 
@@ -66,7 +66,7 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            'target-update-frequency': int(200), # iteration (/n)
+            'target-update-frequency': int(500), # iteration (/n)
         }
     },
 
