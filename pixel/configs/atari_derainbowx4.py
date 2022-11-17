@@ -43,7 +43,7 @@ configurations = {
         'init-steps': int(8000), # 1600 in van Hasselt et al. (2019)
         'expl-steps': int(4000), # 0 in van Hasselt et al. (2019)
         'learn-freq': 1, # iteration
-        'grad-steps': 2,
+        'grad-steps': 4,
         'render': False,
     },
 
@@ -97,7 +97,7 @@ configurations = {
             },
             'optimizer': {
                 'type': 'Adam',
-                'lr': 2*1e-4,
+                'lr': 1e-4,
                 'eps': 1.5e-4,
                 'norm-clip': 10,
             },
