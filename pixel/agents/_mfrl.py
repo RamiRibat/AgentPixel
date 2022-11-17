@@ -7,7 +7,8 @@ import gym
 from pixel.envs.make import GymMaker
 # from pixel.data.buffers import ReplayBuffer, PERBuffer, NSRBuffer
 
-from pixel.data.replay import ReplayBuffer
+# from pixel.data.replay import ReplayBuffer
+from pixel.data.replay2 import ReplayBuffer
 # from pixel.data.memory import ReplayMemory
 
 
