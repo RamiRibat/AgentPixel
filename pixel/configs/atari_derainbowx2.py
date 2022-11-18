@@ -111,8 +111,8 @@ configurations = {
         'buffer-type': 'PER',
         'capacity': int(2e5),
         # 'capacity': int(4e5),
-        'batch-size': 32, # v1/2/3
-        # 'batch-size': 64, # v4/5/6
+        # 'batch-size': 32, # v1/2/3
+        'batch-size': 64, # v4/5/6
     }
 
 }
