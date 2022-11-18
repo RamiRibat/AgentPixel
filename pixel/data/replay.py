@@ -130,6 +130,7 @@ class ReplayBuffer:
         obs_dim, act_dim,
         configs, hyperparameters,
         seed = 0, device = 'cpu'):
+        print('ReplayBuffer')
         self.n_envs = n_envs
         self.SARD = sard(configs['obs-type'], obs_dim, act_dim)
         self.configs, self.hyperparameters, self.seed, self._device_ = configs, hyperparameters, seed, device

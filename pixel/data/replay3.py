@@ -130,6 +130,7 @@ class ReplayBuffer:
         obs_dim, act_dim,
         configs, hyperparameters,
         seed = 0, device = 'cpu'):
+        print('ReplayBuffer 3')
         self.n_envs = n_envs
         self.SARD = sard(configs['obs-type'], obs_dim, act_dim)
         self.configs, self.hyperparameters, self.seed, self._device_ = configs, hyperparameters, seed, device
@@ -198,10 +199,10 @@ class ReplayBuffer:
 
     def sample_batch(self, batch_size) -> Dict:
         if self.configs['buffer-type'] == 'PER':
-            x_n = int(batch_size/32)
+            x_n = int(batch_size/16)
             total_prios_list = np.array([ transitions.total() for transitions in self.transitions_list ])
-            # prios_probs = total_prios_list / total_prios_list.sum()
-            self.x_sample = self.x_all # np.random.choice(self.x_all, x_n, p=prios_probs, replace=False)
+            prios_probs = total_prios_list / total_prios_list.sum()
+            self.x_sample = np.random.choice(self.x_all, x_n, p=prios_probs, replace=False)
             # print(f'self.x={self.x_sample}')
             total_prios_sublist = total_prios_list[self.x_sample]
             segment_batch = self._sample_batch_from_segments(batch_size, total_prios_sublist)
