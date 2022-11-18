@@ -278,8 +278,6 @@ class RainbowLearner(MFRL):
 
         Jq_biased = Jq_biased.detach().cpu().numpy()
         new_prios = Jq_biased # + prio_eps
-        # print(f'idxs={idxs}')
-        # print(f'\nprio={new_prios}')
         self.buffer.update_prios(idxs, new_prios)
         # self.buffer.update_priorities(idxs, new_prios)
 
@@ -423,7 +421,7 @@ def main(configurations, seed, device, wb):
     # group_name = f"{algorithm}-200M-{environment}" # H < -2.7
 
     if n_envs > 0:
-        group_name = f"{algorithm}-{environment}-X{n_envs}"
+        group_name = f"{algorithm}-{environment}-X{n_envs}-v10"
     else:
         group_name = f"{algorithm}-{environment}"
 

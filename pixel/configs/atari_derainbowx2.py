@@ -70,8 +70,8 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            'target-update-frequency': int(2000), # v1/3/4/6
-            # 'target-update-frequency': int(1000), # v2/5
+            # 'target-update-frequency': int(2000), # v1/3/4/6
+            'target-update-frequency': int(1000), # v2/5
         }
     },
 
@@ -111,8 +111,8 @@ configurations = {
         'buffer-type': 'PER',
         'capacity': int(2e5),
         # 'capacity': int(4e5),
-        # 'batch-size': 32, # v1/2/3
-        'batch-size': 64, # v4/5/6
+        'batch-size': 32, # v1/2/3
+        # 'batch-size': 64, # v4/5/6
     }
 
 }

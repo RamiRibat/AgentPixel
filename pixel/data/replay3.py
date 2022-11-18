@@ -155,9 +155,12 @@ class ReplayBuffer:
 
     def update_prios(self, idxs, prios) -> None:
         prios = np.power(prios, self.omega)
+        # print(f'x_sample={self.x_sample}')
+        bz = len(idxs)
+        n = len(self.x_sample)
         for i, x in enumerate(self.x_sample):
-            a = int(i*len(idxs)/len(self.x_sample))
-            z = int((i+1)*len(idxs)/len(self.x_sample))
+            a = int(i*bz/n)
+            z = int((i+1)*bz/n)
             self.transitions_list[x]._update_prios(idxs[a:z], prios[a:z])
 
     def append_sard(self, s, a, r, d) -> None:
@@ -197,8 +200,8 @@ class ReplayBuffer:
         if self.configs['buffer-type'] == 'PER':
             x_n = int(batch_size/32)
             total_prios_list = np.array([ transitions.total() for transitions in self.transitions_list ])
-            prios_probs = total_prios_list / total_prios_list.sum()
-            self.x_sample = np.random.choice(self.x_all, x_n, p=prios_probs, replace=False)
+            # prios_probs = total_prios_list / total_prios_list.sum()
+            self.x_sample = self.x_all # np.random.choice(self.x_all, x_n, p=prios_probs, replace=False)
             # print(f'self.x={self.x_sample}')
             total_prios_sublist = total_prios_list[self.x_sample]
             segment_batch = self._sample_batch_from_segments(batch_size, total_prios_sublist)
