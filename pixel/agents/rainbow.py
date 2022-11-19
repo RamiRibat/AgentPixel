@@ -315,7 +315,6 @@ class RainbowLearner(MFRL):
         batch: int):
 
         batch_size = self.configs['data']['batch-size']
-        # batch_size = int(batch_size/2)
 
         n_steps = self.configs['algorithm']['hyperparameters']['n-steps']
         atom_size = self.configs['algorithm']['hyperparameters']['atom-size']
@@ -421,7 +420,7 @@ def main(configurations, seed, device, wb):
     # group_name = f"{algorithm}-200M-{environment}" # H < -2.7
 
     if n_envs > 0:
-        group_name = f"{algorithm}-{environment}-X{n_envs}-v15"
+        group_name = f"{algorithm}-{environment}-X{n_envs}"
     else:
         group_name = f"{algorithm}-{environment}"
 
