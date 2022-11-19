@@ -50,7 +50,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(5e3), # iteration X n-envs
-        'episodes': 5,
+        'episodes': 10,
         'render': False,
     },
 
