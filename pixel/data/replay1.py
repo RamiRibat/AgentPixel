@@ -74,7 +74,6 @@ class SegmentTree: # for PER
         return (self.sum_tree[idxs], data_idxs, idxs)
 
     def append(self, sard, prio) -> None:
-        # print(f'idx={self.idx} | tree_idx={self.idx+self.tree_start} | prio={prio}')
         self.data[self.idx] = sard
         self._update_prio(self.idx+self.tree_start, prio)
         self.idx = (self.idx+1)%self.tree_capacity # FIFO
@@ -131,26 +130,36 @@ class ReplayBuffer:
         obs_dim, act_dim,
         configs, hyperparameters,
         seed = 0, device = 'cpu'):
+        print('ReplayBuffer 1')
         self.n_envs = n_envs
         self.SARD = sard(configs['obs-type'], obs_dim, act_dim)
         self.configs, self.hyperparameters, self.seed, self._device_ = configs, hyperparameters, seed, device
         self.capacity, self.batch_size = configs['capacity'], configs['batch-size']
         self.history, self.n_steps, self.gamma = hyperparameters['history'], hyperparameters['n-steps'], hyperparameters['gamma']
         self.gamma_n = T.tensor([self.gamma**i for i in range(self.n_steps)], dtype=T.float32, device=device)
+        self.sub_capacity = int(self.capacity/n_envs)
         if configs['buffer-type'] == 'PER':
             self.omega, self.beta = hyperparameters['omega'], hyperparameters['beta']
-            self.transitions = SegmentTree(self.capacity, self.SARD)
-            # self.
+            # self.transitions = SegmentTree(self.capacity, self.SARD)
+            self.transitions_list = [ SegmentTree(self.sub_capacity, self.SARD) for _ in range(n_envs) ]
         else:
             self.transitions = Buffer(self.capacity, self.SARD)
         self.t = 0
 
     def size(self) -> int:
-        return self.capacity if self.transitions.full else self.transitions.idx
+        full = np.all([transitions.full for transitions in self.transitions_list])
+        if full:
+            return self.capacity
+        else:
+            capacity = np.sum([transitions.idx for transitions in self.transitions_list])
+            return capacity
 
     def update_prios(self, idxs, prios) -> None:
         prios = np.power(prios, self.omega)
-        self.transitions._update_prios(idxs, prios)
+        for n in range(self.n_envs):
+            i = int(n*len(idxs)/self.n_envs)
+            f = int((n+1)*len(idxs)/self.n_envs)
+            self.transitions_list[n]._update_prios(idxs[i:f], prios[i:f])
 
     def append_sard(self, s, a, r, d) -> None:
         pixel = self.configs['obs-type'] == 'pixel'
@@ -178,7 +187,7 @@ class ReplayBuffer:
                     sard = (self.t, s[i][-1] if self.history > 1 else s[i], a[i], a[i], r[i], not d[i])
 
                 if self.configs['buffer-type'] == 'PER':
-                    self.transitions.append(sard, self.transitions.max)
+                    self.transitions_list[i].append(sard, self.transitions_list[i].max)
                 else:
                     self.transitions.append(sard)
 
@@ -187,10 +196,10 @@ class ReplayBuffer:
 
     def sample_batch(self, batch_size) -> Dict:
         if self.configs['buffer-type'] == 'PER':
-            total_prios = self.transitions.total()
-            segment_batch = self._sample_batch_from_segments(batch_size, total_prios)
-            probs = segment_batch['probs'] / total_prios
-            capacity = self.capacity if self.transitions.full else self.transitions.idx
+            total_prios_list = [ transitions.total() for transitions in self.transitions_list ]
+            segment_batch = self._sample_batch_from_segments(batch_size, total_prios_list)
+            probs = segment_batch['probs'] #/ np.mean(total_prios_list)
+            capacity = self.size() #self.capacity if self.transitions.full else self.transitions.idx
             weights = (capacity*probs) ** -self.beta
             weights_normz = T.tensor(weights/weights.max(), dtype=T.float32, device=self._device_)
             batch = dict(tree_idxs=segment_batch['tree_idxs'],
@@ -198,7 +207,6 @@ class ReplayBuffer:
             			 actions=segment_batch['actions'],
             			 returns=segment_batch['returns'],
             			 observations_next=segment_batch['observations_next'],
-            			 # terminals=segment_batch['terminals'],
                          nonterminals=segment_batch['nonterminals'],
                          importance_ws=weights_normz)
         else:
@@ -223,21 +231,34 @@ class ReplayBuffer:
             terminals=terminals)
         return batch
 
-    def _sample_batch_from_segments(self, batch_size, total_prios):
-        segment_length = total_prios / batch_size
-        segment_i = np.arange(batch_size) * segment_length
-        # print(f'total_prio={total_prios} | seg_len={segment_length} | seg_i={segment_i}')
-        valid = False
-        while not valid:
-            samples = np.random.uniform(0.0, segment_length, [batch_size]) + segment_i
-            # print(f'samples={samples}')
-            probs, idxs, tree_idxs = self.transitions.find(samples)
-            # print(f'probs={probs} | idxs={idxs} | tree_idxs={tree_idxs}')
-            if np.all((self.transitions.idx - idxs) % self.capacity > self.n_steps)\
-            and np.all((idxs - self.transitions.idx) % self.capacity >= self.history)\
-            and np.all(probs != 0):
-                valid = True
-        sard_dtype, transitions = self.SARD['dtype'], self._get_transitions(idxs)
+    def _sample_batch_from_segments(self, batch_size, total_prios_list):
+        n_bz = int(batch_size/self.n_envs)
+        idxs_list = []
+        probs_all, idxs_all, tree_idxs_all = [], [], []
+
+        for x in range(len(total_prios_list)):
+            segment_length = total_prios_list[x] / n_bz
+            segment_i = np.arange(n_bz) * segment_length
+            valid = False
+            while not valid:
+                samples = np.random.uniform(0.0, segment_length, [n_bz]) + segment_i
+                probs, idxs, tree_idxs = self.transitions_list[x].find(samples)
+                if np.all((self.transitions_list[x].idx - idxs) % self.sub_capacity > self.n_steps)\
+                and np.all((idxs - self.transitions_list[x].idx) % self.sub_capacity >= self.history)\
+                and np.all(probs != 0):
+                    valid = True
+            idxs_list.append(idxs)
+            # probs_all.extend(probs)
+            probs_all.extend(probs/total_prios_list[x])
+            idxs_all.extend(idxs)
+            tree_idxs_all.extend(tree_idxs)
+
+        probs = np.array(probs_all)
+        idxs = np.array(idxs_all)
+        tree_idxs = np.array(tree_idxs_all)
+
+        sard_dtype, transitions = self.SARD['dtype'], self._get_transitions(idxs_list)
+
         if self.configs['obs-type'] == 'pixel':
             observations = T.tensor(transitions['observation'][:, :self.history], dtype=T.float32, device=self._device_).div_(255)
             observations_next = T.tensor(transitions['observation'][:, self.n_steps:self.n_steps+self.history], dtype=T.float32, device=self._device_).div_(255)
@@ -247,11 +268,8 @@ class ReplayBuffer:
         actions = T.tensor(np.copy(transitions['action'][:, self.history-1]), dtype=T.int64, device=self._device_)
         rewards = T.tensor(np.copy(transitions['reward'][:, self.history-1:-1]), dtype=T.float32, device=self._device_)
         returns = T.matmul(rewards, self.gamma_n)
-        # terminals = T.tensor(np.expand_dims(transitions['terminal'][:, self.history + self.n_steps - 1], axis=1), dtype=T.float32, device=self._device_)
         nonterminals = T.tensor(np.expand_dims(transitions['nonterminal'][:, self.history + self.n_steps - 1], axis=1), dtype=T.float32, device=self._device_)
-        # print('1.terminals: ', (1-terminals))
-        # nonterminals = T.tensor(np.copy(transitions['nonterminal'][:, self.history + self.n_steps - 1]), dtype=T.float32, device=self._device_)
-        # print('2.terminals: ', (1-terminals2.unsqueeze(1)))
+        # print('nonterminals: ', len(nonterminals))
         batch = dict(
             probs=probs,
             idxs=idxs,
@@ -265,12 +283,14 @@ class ReplayBuffer:
         return batch
 
 
-    def _get_transitions(self, idxs) -> None:
+    def _get_transitions(self, idxs_list) -> None:
         blank_sard, sard_dtype = self.SARD['blank'], self.SARD['dtype']
-        transitions_idxs = np.arange(-self.history+1, self.n_steps+1) + np.expand_dims(idxs, axis=1)
-        transitions = self.transitions.get(transitions_idxs)
+        trans_idxs_list = [ np.arange(-self.history+1, self.n_steps+1) + np.expand_dims(idxs, axis=1) for idxs in idxs_list ]
+        transitions_list = [ trans.get(trans_idxs) for trans, trans_idxs in zip(self.transitions_list, trans_idxs_list) ]
+        transitions = np.concatenate(transitions_list)
         transitions_t0 = transitions['t'] == 0
         blank_mask = np.zeros_like(transitions_t0, dtype=bool)
+        # print('blank_mask: ', len(blank_mask))
         for t in range(self.history-2, -1, -1): # (t-1, t-2, t-3)-1
             blank_mask[:, t] = np.logical_or(blank_mask[:, t+1], transitions_t0[:, t+1])
         for t in range(self.history, self.history+self.n_steps): # (t+1, t+2, t+3)
