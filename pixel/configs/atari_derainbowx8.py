@@ -43,7 +43,7 @@ configurations = {
         'init-steps': int(8000), # 1600 in van Hasselt et al. (2019)
         'expl-steps': int(4000), # 0 in van Hasselt et al. (2019)
         'learn-freq': 1, # iteration
-        'grad-steps': 4,
+        'grad-steps': 2,
         'render': False,
     },
 
@@ -69,7 +69,7 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            'target-update-frequency': int(2000),
+            'target-update-frequency': int(1000),
         }
     },
 
@@ -110,7 +110,8 @@ configurations = {
         'capacity': int(2e5),
         # 'batch-size': 32,
         # 'batch-size': 64,
-        'batch-size': 128,
+        # 'batch-size': 128,
+        'batch-size': 256,
     }
 
 }

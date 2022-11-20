@@ -157,7 +157,8 @@ class RainbowLearner(MFRL):
                 T += steps # vec
 
                 RainbowLT.n = T
-                RainbowLT.set_postfix({'Traj': Traj, 'LL': lastL, 'LZ': lastZ})
+                # RainbowLT.set_postfix({'Traj': Traj, 'LL': lastL, 'LZ': lastZ})
+                RainbowLT.set_postfix({'Traj': Traj, 'LL': np.mean(LList), 'LZ': np.mean(ZList)})
                 RainbowLT.refresh()
 
                 if (T>iT): # Start training after iT
@@ -284,32 +285,6 @@ class RainbowLearner(MFRL):
         return Jq
 
 
-    # def update_online_net2(
-    #     self,
-    #     batch_list: Dict[str, np.ndarray]) -> T.Tensor:
-    #
-    #     prio_eps = self.configs['algorithm']['hyperparameters']['prio-eps']
-    #     norm_clip = self.configs['critic']['network']['optimizer']['norm-clip']
-    #
-    #     idxs = batch_list['tree_idxs']
-    #     importance_ws = batch_list['importance_ws']
-    #
-    #     Jq_biased = self.compute_Jq_rainbow(batch_list)
-    #     Jq = T.mean(importance_ws * Jq_biased)
-    #
-    #     self.agent.optimizer.zero_grad()
-    #     Jq.backward()
-    #     clip_grad_norm_(self.agent.online_net.parameters(), norm_clip)
-    #     self.agent.optimizer.step()
-    #
-    #     Jq_biased = Jq_biased.detach().cpu().numpy()
-    #     new_prios = Jq_biased # + prio_eps
-    #     self.buffer.update_prios(idxs_list, new_prios)
-    #     # self.buffer.update_priorities(idxs, new_prios)
-    #
-    #     return Jq
-
-
     def compute_Jq_rainbow(
         self,
         batch: int):
@@ -405,7 +380,10 @@ class RainbowLearner(MFRL):
 def main(configurations, seed, device, wb):
 
     print('Start Rainbow experiment')
-    print('Configurations:\n', json.dumps(configurations, indent=4, sort_keys=False))
+    # print('Configurations:\n', json.dumps(configurations, indent=4, sort_keys=False))
+    print('Learning:\n', json.dumps(configurations['learning'], indent=4, sort_keys=False))
+    print('Data:\n', json.dumps(configurations['data'], indent=4, sort_keys=False))
+    print('Hyperparameters:\n', json.dumps(configurations['algorithm']['hyperparameters'], indent=4, sort_keys=False))
     # print('\n')
 
     # LT = configurations[][]
@@ -420,7 +398,7 @@ def main(configurations, seed, device, wb):
     # group_name = f"{algorithm}-200M-{environment}" # H < -2.7
 
     if n_envs > 0:
-        group_name = f"{algorithm}-{environment}-X{n_envs}-v18"
+        group_name = f"{algorithm}-{environment}-X{n_envs}-v19"
     else:
         group_name = f"{algorithm}-{environment}"
 

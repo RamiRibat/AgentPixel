@@ -156,12 +156,12 @@ class ReplayBuffer:
 
     def update_prios(self, idxs, prios) -> None:
         prios = np.power(prios, self.omega)
-        # print(f'x_sample={self.x_sample}')
         bz = len(idxs)
         N = self.n_envs
         for n in self.n_list:
             a = int(n*bz/N)
             z = int((n+1)*bz/N)
+            # print(f'n:{n} | a:z={a}:{z}')
             self.transitions_list[n]._update_prios(idxs[a:z], prios[a:z])
 
     def append_sard(self, s, a, r, d) -> None:
@@ -202,7 +202,8 @@ class ReplayBuffer:
             total_prios_list = np.array([ transitions.total() for transitions in self.transitions_list ])
             segment_batch = self._sample_batch_from_segments(batch_size, total_prios_list)
             probs = segment_batch['probs'] #/ np.mean(total_prios_list)
-            capacity = self.size() # self.sub_capacity if self.transitions_list[self.x].full else self.transitions_list[self.x].idx
+            # capacity = self.size()
+            capacity = self.sub_capacity if self.transitions_list[0].full else self.transitions_list[0].idx
             weights = (capacity*probs) ** -self.beta
             weights_normz = T.tensor(weights/weights.max(), dtype=T.float32, device=self._device_)
             batch = dict(tree_idxs=segment_batch['tree_idxs'],
