@@ -93,6 +93,7 @@ class MFRL:
         n_envs = self.configs['environment']['n-envs']
         xT = self.configs['learning']['expl-steps']
         EP = [ (1 + 0.1*n)*epsilon for n in range(n_envs) ]
+        # print('EP: ', EP)
 
         if T > xT:
             # action = self.agent.get_action(observation)
