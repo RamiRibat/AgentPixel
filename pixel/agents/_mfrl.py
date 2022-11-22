@@ -92,10 +92,11 @@ class MFRL:
     def interact_vec(self, observation, mask, Z, L, T, Traj, epsilon=0.001):
         n_envs = self.configs['environment']['n-envs']
         xT = self.configs['learning']['expl-steps']
+        EP = [ epsilon - 0.005*n for n in range(n_envs) ]
 
         if T > xT:
-            action = self.agent.get_action(observation)
-            # action = self.agent.get_e_greedy_action_vec(observation, epsilon=[0.1, 0.75])
+            # action = self.agent.get_action(observation)
+            action = self.agent.get_e_greedy_action_vec(observation, epsilon=EP)
         else:
             action = self.learn_env.action_space.sample()
 
@@ -139,7 +140,7 @@ class MFRL:
 
         return observation, mask, Z, L, Traj, steps
 
-    def evaluate(self):
+    def evaluate(self, EE=0):
         evaluate = self.configs['evaluation']['evaluate']
         if evaluate:
             # print('\n[ Evaluation ] -->')

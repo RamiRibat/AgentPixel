@@ -40,8 +40,8 @@ configurations = {
 
     'learning': {
         'total-steps': int(200e3), # 100k in van Hasselt et al. (2019)
-        'init-steps': int(6000), # 1600 in van Hasselt et al. (2019)
-        'expl-steps': int(2000), # 0 in van Hasselt et al. (2019)
+        'init-steps': int(8000), # 1600 in van Hasselt et al. (2019)
+        'expl-steps': int(4000), # 0 in van Hasselt et al. (2019)
         'learn-freq': 1, # iteration
         'grad-steps': 2,
         'render': False,
@@ -50,7 +50,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(5e3), # iteration X n-envs
-        'episodes': 10,
+        'episodes': 5,
         'render': False,
     },
 
@@ -70,6 +70,10 @@ configurations = {
             'v-max': 10.0,
             'atom-size': 51,
             'target-update-frequency': int(500),
+            'init-epsilon': 0.1,
+            'min-epsilon': 0.001,
+            'epsilon-decay': 1/20000,
+
         }
     },
 

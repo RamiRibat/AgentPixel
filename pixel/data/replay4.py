@@ -200,10 +200,14 @@ class ReplayBuffer:
         if self.configs['buffer-type'] == 'PER':
             # x_n = int(batch_size/16)
             total_prios_list = np.array([ transitions.total() for transitions in self.transitions_list ])
+            # print('total_prios_list: ', total_prios_list)
+            # print('total_prios_list (mean): ', total_prios_list.mean())
             segment_batch = self._sample_batch_from_segments(batch_size, total_prios_list)
             probs = segment_batch['probs'] #/ np.mean(total_prios_list)
             # capacity = self.size()
             capacity = self.sub_capacity if self.transitions_list[0].full else self.transitions_list[0].idx
+            # print('probs: ', probs)
+            # print('capacity: ', capacity)
             weights = (capacity*probs) ** -self.beta
             weights_normz = T.tensor(weights/weights.max(), dtype=T.float32, device=self._device_)
             batch = dict(tree_idxs=segment_batch['tree_idxs'],
@@ -239,9 +243,11 @@ class ReplayBuffer:
         bz = int(batch_size/self.n_envs)
         idxs_list = []
         probs_all, idxs_all, tree_idxs_all = [], [], []
+        # total_prios_mean = total_prios_list.mean()
 
         for n in self.n_list:
             segment_length = total_prios_list[n] / bz
+            # segment_length = total_prios_mean / bz
             segment_i = np.arange(bz) * segment_length
             valid = False
             while not valid:
@@ -253,6 +259,7 @@ class ReplayBuffer:
                     valid = True
             idxs_list.append(idxs)
             probs_all.extend(probs/total_prios_list[n])
+            # probs_all.extend(probs/total_prios_mean)
             idxs_all.extend(idxs)
             tree_idxs_all.extend(tree_idxs)
 

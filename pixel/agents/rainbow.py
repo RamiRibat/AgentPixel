@@ -72,7 +72,7 @@ class RainbowAgent:
         action_rand = np.random.randint(0, self.act_dim, size=n_envs)
         action = self.get_greedy_action(observation)
         # print('1.action: ', action)
-        action[probs >= epsilon] = action_rand[probs >= epsilon]
+        action[probs < epsilon] = action_rand[probs < epsilon]
         # print('2.action: ', action)
         return action
 
@@ -132,6 +132,7 @@ class RainbowLearner(MFRL):
         lastZ, lastL = 0, 0
         # EPS = []
         SPSList = []
+        epsilon = 0.1
 
         start_time_real = time.time()
 
@@ -144,7 +145,7 @@ class RainbowLearner(MFRL):
                 if (I%Lf==0): self.agent.online_net.reset_noise()
 
                 # observation, Z, L, Traj_new, terminated, truncated = self.interact(observation, Z, L, T, Traj)
-                observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj)
+                observation, mask, Z, L, Traj_new, steps = self.interact_vec(observation, mask, Z, L, T, Traj, epsilon=epsilon)
 
                 if (Traj_new - Traj) > 0:
                     ZList.append(lastZ), LList.append(lastL)
@@ -155,6 +156,9 @@ class RainbowLearner(MFRL):
                 # T += 1 # single
                 # steps = 1
                 T += steps # vec
+
+                epsilon = self.update_epsilon(epsilon, T)
+                # print('epsilon: ', epsilon)
 
                 RainbowLT.n = T
                 # RainbowLT.set_postfix({'Traj': Traj, 'LL': lastL, 'LZ': lastZ})
@@ -180,7 +184,8 @@ class RainbowLearner(MFRL):
                     sps = T/total_time_real
                     SPSList.append(sps)
                     self.agent.online_net.eval()
-                    VZ, VS, VL = self.evaluate()
+                    EE = 2 if T > 140000 else 0
+                    VZ, VS, VL = self.evaluate(EE)
                     self.agent.online_net.train()
                     logs['data/env_buffer_size                '] = self.buffer.size()
                     logs['training/rainbow/Jq                 '] = Jq
@@ -211,7 +216,7 @@ class RainbowLearner(MFRL):
         sps = T/total_time_real
         SPSList.append(sps)
         self.agent.online_net.eval()
-        VZ, VS, VL = self.evaluate()
+        VZ, VS, VL = self.evaluate(EE)
         # self.agent.online_net.train()
         logs['data/env_buffer_size                '] = self.buffer.size()
         logs['training/rainbow/Jq                 '] = Jq
@@ -371,8 +376,13 @@ class RainbowLearner(MFRL):
         beta_increase = fraction * (1-beta_i)
         self.buffer.priority_weight = min(beta + beta_increase, 1)
 
-    def func2(self):
-        pass
+    def update_epsilon(self, epsilon, T):
+        min_epsilon = self.configs['algorithm']['hyperparameters']['min-epsilon']
+        epsilon_i = self.configs['algorithm']['hyperparameters']['init-epsilon']
+        epsilon_decay = self.configs['algorithm']['hyperparameters']['epsilon-decay']
+        fraction = T * epsilon_decay
+        # epsilon_decrease = fraction * epsilon_i
+        return max(epsilon_i * (1 - fraction), min_epsilon)
 
 
 
@@ -383,6 +393,7 @@ def main(configurations, seed, device, wb):
     # print('Configurations:\n', json.dumps(configurations, indent=4, sort_keys=False))
     print('Learning:\n', json.dumps(configurations['learning'], indent=4, sort_keys=False))
     print('Data:\n', json.dumps(configurations['data'], indent=4, sort_keys=False))
+    print('Critic:\n', json.dumps(configurations['critic'], indent=4, sort_keys=False))
     print('Hyperparameters:\n', json.dumps(configurations['algorithm']['hyperparameters'], indent=4, sort_keys=False))
     # print('\n')
 
@@ -398,7 +409,7 @@ def main(configurations, seed, device, wb):
     # group_name = f"{algorithm}-200M-{environment}" # H < -2.7
 
     if n_envs > 0:
-        group_name = f"{algorithm}-{environment}-X{n_envs}-v19"
+        group_name = f"{algorithm}-{environment}-X{n_envs}-v20"
     else:
         group_name = f"{algorithm}-{environment}"
 
