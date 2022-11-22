@@ -409,7 +409,7 @@ def main(configurations, seed, device, wb):
     # group_name = f"{algorithm}-200M-{environment}" # H < -2.7
 
     if n_envs > 0:
-        group_name = f"{algorithm}-{environment}-X{n_envs}-v26"
+        group_name = f"{algorithm}-{environment}-X{n_envs}-v27"
     else:
         group_name = f"{algorithm}-{environment}"
 
