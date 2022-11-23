@@ -40,7 +40,7 @@ configurations = {
 
     'learning': {
         'total-steps': int(200e3), # 100k in van Hasselt et al. (2019)
-        'init-steps': int(6000), # 1600 in van Hasselt et al. (2019)
+        'init-steps': int(8000), # 1600 in van Hasselt et al. (2019)
         # 'expl-steps': int(4000), # 0 in van Hasselt et al. (2019)
         'expl-steps': int(0000), # 0 in van Hasselt et al. (2019)
         'learn-freq': 1, # iteration
@@ -74,7 +74,7 @@ configurations = {
             'init-epsilon': 0.5,
             'min-epsilon': 0.0001,
             # 'epsilon-decay': 1/10000,
-            'epsilon-decay': 1/12000,
+            'epsilon-decay': 1/16000,
 
         }
     },
