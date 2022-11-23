@@ -74,8 +74,8 @@ configurations = {
             'target-update-frequency': int(1000), # v2/5
             'init-epsilon': 0.1,
             'min-epsilon': 0.0001,
+            'epsilon-decay': 1/5000,
             # 'epsilon-decay': 1/10000,
-            'epsilon-decay': 1/10000,
         }
     },
 

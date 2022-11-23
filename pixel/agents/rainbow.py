@@ -190,6 +190,7 @@ class RainbowLearner(MFRL):
                     logs['data/env_buffer_size                '] = self.buffer.size()
                     logs['training/rainbow/Jq                 '] = Jq
                     logs['training/rainbow/beta               '] = self.buffer.beta
+                    logs['training/rainbow/epsilon            '] = epsilon
                     # logs['training/rainbow/beta               '] = self.buffer.priority_weight
                     logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
                     logs['learning/real/rollout_return_std    '] = np.std(ZList)
@@ -221,6 +222,7 @@ class RainbowLearner(MFRL):
         logs['data/env_buffer_size                '] = self.buffer.size()
         logs['training/rainbow/Jq                 '] = Jq
         logs['training/rainbow/beta               '] = self.buffer.beta
+        logs['training/rainbow/epsilon            '] = epsilon
         # logs['training/rainbow/beta               '] = self.buffer.priority_weight
         logs['learning/real/rollout_return_mean   '] = np.mean(ZList)
         logs['learning/real/rollout_return_std    '] = np.std(ZList)
@@ -405,7 +407,7 @@ def main(configurations, seed, device, wb):
     # group_name = f"{algorithm}-200M-{environment}" # H < -2.7
 
     if n_envs > 0:
-        group_name = f"{algorithm}-{environment}-X{n_envs}-v35"
+        group_name = f"{algorithm}-{environment}-X{n_envs}-v36"
     else:
         group_name = f"{algorithm}-{environment}"
 

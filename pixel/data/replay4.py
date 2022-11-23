@@ -204,8 +204,8 @@ class ReplayBuffer:
             # print('total_prios_list (mean): ', total_prios_list.mean())
             segment_batch = self._sample_batch_from_segments(batch_size, total_prios_list)
             probs = segment_batch['probs'] #/ np.mean(total_prios_list)
-            # capacity = self.size()
-            capacity = self.sub_capacity if self.transitions_list[0].full else self.transitions_list[0].idx
+            capacity = self.size()
+            # capacity = self.sub_capacity if self.transitions_list[0].full else self.transitions_list[0].idx
             # print('probs: ', probs)
             # print('capacity: ', capacity)
             weights = (capacity*probs) ** -self.beta
