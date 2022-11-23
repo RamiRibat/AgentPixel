@@ -107,20 +107,12 @@ class MFRL:
 
         observation_next, reward, terminated, truncated, info = self.learn_env.step(action)
 
-        # print('interact.observation_next: ', observation_next.shape)
-        # print('reward: ', reward.shape)
-        # print('terminated: ', terminated.shape)
-
-        # print('1.observation: ', observation.sum())
-
         if self.configs['environment']['n-envs'] == 0:
             observation = np.array([observation], dtype=np.float32)
             action = np.array([action], dtype=np.int32)
             reward = np.array([reward], dtype=np.float32)
             terminated = np.array([terminated], dtype=bool)
             truncated = np.array([truncated], dtype=bool)
-
-        # print('2.observation: ', observation.sum())
 
         self.buffer.append_sard_vec(observation, action, reward, terminated, mask)
 
@@ -134,7 +126,6 @@ class MFRL:
 
         # if mask.sum()==0:
         if mask.sum()<max(1, n_envs):
-            # print(f'RESET | terminated={terminated}')
             Z, S, L, Traj = 0, 0, 0, Traj+max(1, n_envs)
             observation, info = self.learn_env.reset()
             mask = np.ones([max(1, n_envs)], dtype=bool)
@@ -153,7 +144,6 @@ class MFRL:
                 Z, S, L = 0, 0, 0
                 observation, info = self.eval_env.reset()
                 while True:
-                    # print(f'[ Evaluation ] ee={ee} | L={L}')
                     # action = self.learn_env.action_space.sample()
                     # action = self.agent.get_greedy_action(observation, evaluation=True)
                     action = self.agent.get_e_greedy_action(observation, evaluation=True)

@@ -157,7 +157,7 @@ class RainbowLearner(MFRL):
                 # steps = 1
                 T += steps # vec
 
-                epsilon = self.update_epsilon(epsilon, T)
+                epsilon = self.update_epsilon(T)
                 # print('epsilon: ', epsilon)
 
                 RainbowLT.n = T
@@ -249,9 +249,6 @@ class RainbowLearner(MFRL):
 
         batch = self.buffer.sample_batch(batch_size)
         Jq = self.update_online_net(batch)
-
-        # batchs = self.buffer.sample_batch(batch_size)
-        # Jq = self.update_online_net2(batchs)
 
         Jq = Jq.item()
 
@@ -376,12 +373,11 @@ class RainbowLearner(MFRL):
         beta_increase = fraction * (1-beta_i)
         self.buffer.priority_weight = min(beta + beta_increase, 1)
 
-    def update_epsilon(self, epsilon, T):
+    def update_epsilon(self, T):
         min_epsilon = self.configs['algorithm']['hyperparameters']['min-epsilon']
         epsilon_i = self.configs['algorithm']['hyperparameters']['init-epsilon']
         epsilon_decay = self.configs['algorithm']['hyperparameters']['epsilon-decay']
         fraction = T * epsilon_decay
-        # epsilon_decrease = fraction * epsilon_i
         return max(epsilon_i * (1 - fraction), min_epsilon)
 
 
@@ -409,7 +405,7 @@ def main(configurations, seed, device, wb):
     # group_name = f"{algorithm}-200M-{environment}" # H < -2.7
 
     if n_envs > 0:
-        group_name = f"{algorithm}-{environment}-X{n_envs}-v32"
+        group_name = f"{algorithm}-{environment}-X{n_envs}-v33"
     else:
         group_name = f"{algorithm}-{environment}"
 

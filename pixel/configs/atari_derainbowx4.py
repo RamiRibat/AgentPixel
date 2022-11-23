@@ -50,7 +50,7 @@ configurations = {
     'evaluation': {
         'evaluate': True,
         'eval-freq': int(5e3), # iteration X n-envs
-        'episodes': 5,
+        'episodes': 10,
         'render': False,
     },
 
@@ -72,6 +72,7 @@ configurations = {
             'target-update-frequency': int(1000),
             'init-epsilon': 0.25,
             'min-epsilon': 0.0001,
+            # 'epsilon-decay': 1/10000,
             'epsilon-decay': 1/20000,
 
         }
