@@ -72,10 +72,10 @@ configurations = {
             'atom-size': 51,
             # 'target-update-frequency': int(2000), # v1/3/4/6
             'target-update-frequency': int(1000), # v2/5
-            'init-epsilon': 0.25,
+            'init-epsilon': 0.1,
             'min-epsilon': 0.0001,
             # 'epsilon-decay': 1/10000,
-            'epsilon-decay': 1/20000,
+            'epsilon-decay': 1/10000,
         }
     },
 
