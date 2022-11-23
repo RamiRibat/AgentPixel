@@ -70,7 +70,7 @@ configurations = {
             'v-min': -10.0, #
             'v-max': 10.0,
             'atom-size': 51,
-            'target-update-frequency': int(500),
+            'target-update-frequency': int(1000),
             'init-epsilon': 0.5,
             'min-epsilon': 0.0001,
             # 'epsilon-decay': 1/10000,
