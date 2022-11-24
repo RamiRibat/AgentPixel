@@ -31,6 +31,9 @@ class RainbowAgent:
         self._device_ = device
         self.online_net, self.target_net = None, None
         self._build()
+        n_envs = self.configs['environment']['n-envs']
+        epsilon_i = self.configs['algorithm']['hyperparameters']['init-epsilon']
+        self.EP = np.linspace(-0.5,0.5,n_envs)
 
     def _build(self):
         net_cfgs = self.configs['critic']['network']
@@ -68,11 +71,13 @@ class RainbowAgent:
 
     def get_e_greedy_action_vec(self, observation, epsilon, evaluation=True): # Select Action(s) based on greedy-policy
         n_envs = self.configs['environment']['n-envs']
+        EP = (self.EP*epsilon) + epsilon
+        # print('EP: ', EP)
         probs = np.random.random(n_envs)
         action_rand = np.random.randint(0, self.act_dim, size=n_envs)
         action = self.get_greedy_action(observation)
         # print('1.action: ', action)
-        action[probs < epsilon] = action_rand[probs < epsilon]
+        action[probs < EP] = action_rand[probs < EP]
         # print('2.action: ', action)
         return action
 
@@ -184,7 +189,7 @@ class RainbowLearner(MFRL):
                     sps = T/total_time_real
                     SPSList.append(sps)
                     self.agent.online_net.eval()
-                    EE = 2 if T > 140000 else 0
+                    EE = 10 if T > 100000 else 0
                     VZ, VS, VL = self.evaluate(EE)
                     self.agent.online_net.train()
                     logs['data/env_buffer_size                '] = self.buffer.size()
@@ -407,7 +412,7 @@ def main(configurations, seed, device, wb):
     # group_name = f"{algorithm}-200M-{environment}" # H < -2.7
 
     if n_envs > 0:
-        group_name = f"{algorithm}-{environment}-X{n_envs}-v40"
+        group_name = f"{algorithm}-{environment}-X{n_envs}-v41"
     else:
         group_name = f"{algorithm}-{environment}"
 
