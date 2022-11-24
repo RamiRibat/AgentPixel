@@ -189,7 +189,7 @@ class RainbowLearner(MFRL):
                     sps = T/total_time_real
                     SPSList.append(sps)
                     self.agent.online_net.eval()
-                    EE = 10 if T > 100000 else 0
+                    EE = 10 if T > 120000 else 0
                     VZ, VS, VL = self.evaluate(EE)
                     self.agent.online_net.train()
                     logs['data/env_buffer_size                '] = self.buffer.size()
@@ -412,7 +412,7 @@ def main(configurations, seed, device, wb):
     # group_name = f"{algorithm}-200M-{environment}" # H < -2.7
 
     if n_envs > 0:
-        group_name = f"{algorithm}-{environment}-X{n_envs}-v41"
+        group_name = f"{algorithm}-{environment}-X{n_envs}-v42"
     else:
         group_name = f"{algorithm}-{environment}"
 
