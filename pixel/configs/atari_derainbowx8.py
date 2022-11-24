@@ -41,9 +41,9 @@ configurations = {
     'learning': {
         'total-steps': int(200e3), # 100k in van Hasselt et al. (2019)
         'init-steps': int(8000), # 1600 in van Hasselt et al. (2019)
-        'expl-steps': int(4000), # 0 in van Hasselt et al. (2019)
+        'expl-steps': int(16000), # 0 in van Hasselt et al. (2019)
         'learn-freq': 1, # iteration
-        'grad-steps': 2,
+        'grad-steps': 4,
         'render': False,
     },
 
@@ -70,6 +70,9 @@ configurations = {
             'v-max': 10.0,
             'atom-size': 51,
             'target-update-frequency': int(1000),
+            'init-epsilon': 0.5,
+            'min-epsilon': 0.005,
+            'epsilon-decay': 1/16000,
         }
     },
 
@@ -109,9 +112,9 @@ configurations = {
         'buffer-type': 'PER',
         'capacity': int(2e5),
         # 'batch-size': 32,
-        # 'batch-size': 64,
+        'batch-size': 64,
         # 'batch-size': 128,
-        'batch-size': 256,
+        # 'batch-size': 256,
     }
 
 }
