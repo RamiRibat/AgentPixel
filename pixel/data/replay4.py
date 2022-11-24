@@ -210,6 +210,7 @@ class ReplayBuffer:
             # print('capacity: ', capacity)
             weights = (capacity*probs) ** -self.beta
             weights_normz = T.tensor(weights/weights.max(), dtype=T.float32, device=self._device_)
+            # print('weights_normz: ', weights_normz)
             batch = dict(tree_idxs=segment_batch['tree_idxs'],
                          observations=segment_batch['observations'],
             			 actions=segment_batch['actions'],
