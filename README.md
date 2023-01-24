@@ -71,7 +71,7 @@ python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 0 --device 'cu
 | Pong | -16.6 ±3 | -12.7 ±2 |  |  |  |  |
 | Qbert | 2588.3 ±1633 | 3196.7 ±1142 |  |  |  |  |
 
-### Atari 200M Rainbow x64 | [W&B](https://)
+### Atari 50M (200M frames) Rainbow x64 | [W&B](https://)
 | Game | 2M | 5M | 10M | 20M | 30M | 40M | 50M |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | Alien |  |  |  |  |  |  |  |
@@ -83,7 +83,7 @@ python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 0 --device 'cu
 | Pong |  |  |  |  |  |  |  |
 | Qbert |  |  |  |  |  |  |  |
 
-### Atari 200M x64
+### Atari 50M (200M frames) x64
 | Game | DQN | DDQN | PER | Rainbow | R2D2 | NGU | Agent57 |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | Alien |  |  |  |  |  |  |  |
