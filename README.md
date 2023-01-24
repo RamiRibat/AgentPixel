@@ -54,13 +54,22 @@ python -m pixel.run --alg DERainbow --env ALE/Freeway-v5 --n-envs 0 --device 'cu
 
 ## Selected Results
 ### Atari 100k/200k DERainbow | [W&B](https://wandb.ai/rami-ahmed/ATARI-100-200K?workspace=user-rami-ahmed)
-| Game | 100k | 200k | 200k x1 | 200k x2 | 200k x4 | 200k x8 | 200k x16 |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Alien | 912 ±338 | 861.3 ±117 | 766 ±130 | 636.8 ±105 |  |  |  |
-| Hero | 27.9 ±3 | 30.7 ±0.3 | 30.6 ±1 |  |  |  |  |
-| Freeway | 6815 ±1005 | 8587.7 ±2164 | 7975.5 ±799 |  |  |  |  |
-| Pong | -18.3 ±4 | -16.6 ±3 | -12.7 ±2 |  |  |  |  |
-| Qbert | 772 ±364 | 2588.3 ±1633 | 3196.7 ±1142 |  |  |  |  |
+| Game | 100k | 200k |
+| --- | :---: | :---: |
+| Alien | 912 ±338 | 861.3 ±117 |
+| Hero | 27.9 ±3 | 30.7 ±0.3 |
+| Freeway | 6815 ±1005 | 8587.7 ±2164 |
+| Pong | -18.3 ±4 | -16.6 ±3 |
+| Qbert | 772 ±364 | 2588.3 ±1633 |
+
+### Atari 200k xx DERainbow | [W&B](https://wandb.ai/rami-ahmed/ATARI-100-200K?workspace=user-rami-ahmed)
+| Game | 200k | 200k x1 | 200k x2 | 200k x4 | 200k x8 | 200k x16 |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Alien | 861.3 ±117 | 766 ±130 | 636.8 ±105 |  |  |  |
+| Hero | 30.7 ±0.3 | 30.6 ±1 |  |  |  |  |
+| Freeway | 8587.7 ±2164 | 7975.5 ±799 |  |  |  |  |
+| Pong | -16.6 ±3 | -12.7 ±2 |  |  |  |  |
+| Qbert | 2588.3 ±1633 | 3196.7 ±1142 |  |  |  |  |
 
 ### Atari 200M Rainbow x64 | [W&B](https://)
 | Game | 2M | 5M | 10M | 20M | 30M | 40M | 50M |
